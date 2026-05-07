@@ -14,10 +14,10 @@ This avoids three-way live sync conflicts while keeping teams bidirectionally aw
 
 ## How it differs
 
-- Not just a generator. Most AI ticket tools are one-shot: PRD in, tickets out. Specbot maintains the relationship over time.
-- Not omnidirectional. Three-way live sync between docs, tickets, and designs creates conflicts that have no clear resolution. Specbot routes every change through the spec.
-- Not a chat workflow. A webhook listener that runs continuously and opens PRs without human prompting is not something a Claude conversation can do.
-- Pluggable. Adding a new ticket system, design tool, or doc source means implementing one interface and registering it.
+- Not just a generator: Most AI ticket tools are one-shot: PRD in, tickets out. Specbot maintains the relationship over time.
+- Not omnidirectional: Three-way live sync between docs, tickets, and designs creates conflicts that have no clear resolution. Specbot routes every change through the spec.
+- Not a chat workflow: A webhook listener that runs continuously and opens PRs without human prompting is not something a Claude conversation can do.
+- Pluggable: Adding a new ticket system, design tool, or doc source means implementing one interface and registering it.
 
 ## What works today (v0.1)
 
