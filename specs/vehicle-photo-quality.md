@@ -1,6 +1,8 @@
 # Vehicle Photo Quality Scoring
 
-Automated system to score and flag low-quality vehicle listing photos using computer vision, improving marketplace trust and booking conversion. This is a sample test feature.
+> Sample spec. This is a fictional Turo-style feature used to test specbot. It is not a real Turo product, roadmap item, or commitment. The terminology (hosts, listings, guests, bookings) is borrowed from Turo's domain to make the example realistic.
+
+Automated system to score and flag low-quality vehicle listing photos using computer vision, with the goal of improving marketplace trust and booking conversion.
 
 ## Photo Upload Validation
 
