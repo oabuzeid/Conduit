@@ -2,9 +2,9 @@
 
 ## What this is
 
-Specbot is a **spec-arbitrated sync engine** for product teams. The thesis: when specs, tickets, and designs fall out of sync, route every change through the spec as a merge point. Any side can propose changes; the spec PR is where humans review and arbitrate.
+Specbot is a spec-arbitrated sync engine for product teams. When specs, tickets, and designs fall out of sync, every change is routed through the spec. Any side can propose changes. The spec PR is where humans review and decide.
 
-This avoids the chaos of three-way live sync (where Linear, Figma, and the spec can all write to each other) while still giving teams bidirectional awareness.
+This avoids three-way live sync, where Linear, Figma, and the spec can all write to each other. Teams still get bidirectional awareness.
 
 ## Why this exists when Claude + MCP can do similar things
 
@@ -16,7 +16,7 @@ A Claude conversation with Linear/Figma MCPs connected can do most of what `spec
 - Run in CI (GitHub Action can't open a Claude session)
 - Be forked and configured by other teams
 
-Specbot's USP isn't AI ticket generation — it's the **persistent service** that arbitrates between systems.
+Specbot's value is not AI ticket generation. It is the persistent service that arbitrates between systems.
 
 ## Structure
 
@@ -63,9 +63,9 @@ ANTHROPIC_API_KEY (required), LINEAR_API_KEY (Linear), JIRA_HOST + JIRA_EMAIL + 
 ## Roadmap
 
 ### v0.1 — Foundation (built)
-One-way generation. This is the substrate v0.2 builds on.
+One-way generation. This is the basis v0.2 builds on.
 
-### v0.2 — The actual product (next)
+### v0.2 — The sync engine (next)
 The spec-arbitrated sync engine itself.
 
 **Build order:**
@@ -118,3 +118,14 @@ For v0.2, providers also need to support emitting webhook events. The interface 
 - AI prompts return JSON only; strip markdown fences before parsing
 - ora spinners for async, chalk for color
 - State uses sha256 hashes (first 12 chars) for change detection
+
+## Writing style for `.md` files
+
+Apply these rules to every markdown file in the repo (README, CHANGELOG, ROADMAP, STATUS, CONTRIBUTING, specs, etc.).
+
+- Be concise. Cut any sentence that does not add information.
+- Use common words. Do not use "substrate", "scaffold" (as a noun for concepts), "primitive", "surface" (as a verb), "leverage", "orchestrate", or similar jargon. Prefer "basis", "baseline", "foundation", "starting point", "show", "use", "coordinate".
+- No figures of speech. No metaphors, analogies, or idioms ("under the hood", "out of the box", "boils down to", "north star", "source of truth" is acceptable only as the literal data term).
+- Be direct and precise. State what something is or does, not what it feels like.
+- No marketing adjectives: "powerful", "seamless", "robust", "elegant", "blazing", "first-class".
+- Prefer short sentences over long ones with semicolons or em-dash asides.

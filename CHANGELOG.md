@@ -38,4 +38,4 @@ Initial release. One-way generation foundation for the spec-arbitrated sync engi
 
 ### Notes
 
-v0.1 deliberately does not implement bidirectional sync, webhook listeners, or automatic spec PR generation. Those are the v0.2 goals. v0.1 establishes the substrate (parser, AI engine, provider interface, state model) that v0.2 will build on top of.
+v0.1 does not implement bidirectional sync, webhook listeners, or automatic spec PR generation. Those are v0.2 goals. v0.1 provides the basis (parser, AI engine, provider interface, state model) that v0.2 will use.
