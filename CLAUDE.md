@@ -2,21 +2,26 @@
 
 ## What this is
 
-Specbot is a spec-arbitrated sync engine for product teams. When specs, tickets, and designs fall out of sync, every change is routed through the spec. Any side can propose changes. The spec PR is where humans review and decide.
+Specbot is a spec-arbitrated, agent-directed sync engine for product teams. When specs, tickets, and designs fall out of sync, every change is routed through the spec as a merge point. An LLM agent decides how to route each change: open a PR now, batch with related changes, ask the PM, or pause for loop detection.
 
-This avoids three-way live sync, where Linear, Figma, and the spec can all write to each other. Teams still get bidirectional awareness.
+Over time, specbot logs how teams edit its outputs, identifies patterns, and proposes prompt updates that pass an eval harness before shipping.
 
 ## Why this exists when Claude + MCP can do similar things
 
-A Claude conversation with Linear/Figma MCPs connected can do most of what `specbot generate` does. What it can't do:
+A Claude conversation with Linear and Figma MCPs can do most of what `specbot generate` does. It cannot:
 
-- Run continuously without human prompting (webhook listener)
-- Open PRs against a repo as a side-effect of a Linear webhook firing
-- Maintain state across sessions (which spec sections map to which tickets)
-- Run in CI (GitHub Action can't open a Claude session)
-- Be forked and configured by other teams
+- Run continuously without human prompting
+- Open PRs as a webhook side-effect
+- Maintain state across sessions
+- Run in CI
+- Log interactions and learn from edits over time
+- Be installed by other teams without prompting expertise
 
-Specbot's value is not AI ticket generation. It is the persistent service that arbitrates between systems.
+v0.1's USP is weak (Claude can do it directly). v0.2 and v0.3's USPs are strong.
+
+## What this becomes that Linear or Jira won't build
+
+Linear and Jira will ship AI ticket generation within a year. They won't ship a tool that operates between their product, the design tool, the spec repo, and Slack. The cross-tool agent is the part that can't be commoditized.
 
 ## Structure
 
@@ -62,54 +67,41 @@ ANTHROPIC_API_KEY (required), LINEAR_API_KEY (Linear), JIRA_HOST + JIRA_EMAIL + 
 
 ## Roadmap
 
-### v0.1 — Foundation (built)
-One-way generation. This is the basis v0.2 builds on.
+See ROADMAP.md for the full version. Build order summary:
 
-### v0.2 — The sync engine (next)
-The spec-arbitrated sync engine itself.
+### v0.2 — Agentic sync engine + capture layer
 
-**Build order:**
+1. Reverse-direction analyzer (`src/core/reverse-analyzer.ts`)
+2. Spec PR generator (`src/core/spec-pr.ts`) using Octokit
+3. Investigation agent (`src/core/agent.ts`) — LLM directs control flow
+4. Webhook listener service (`src/server/`) — `specbot serve --port 3000`
+5. Merge-propagation — listen for spec PR merges, run downstream sync
+6. Loop prevention — hash-based change attribution
+7. PRD ambiguity scanner — pre-generation step
+8. AC regression detector — flag weakened acceptance criteria
+9. Artifact capture layer — log every run to SQLite. No learning yet, just capture.
 
-1. **Reverse-direction analyzer** (`src/core/reverse-analyzer.ts`)
-   - Input: a ticket (Linear/Jira) and the spec section it maps to (from state.json)
-   - Output: a markdown diff describing how the ticket has diverged from the spec
-   - Uses the AI engine — same JSON-only response pattern as existing prompts
+### v0.3 — Learning loop + cross-tool extraction
 
-2. **Spec PR generator** (`src/core/spec-pr.ts`)
-   - Input: a reverse diff
-   - Action: clones the spec repo, applies the diff to the relevant spec file, opens a GitHub PR
-   - PR body includes: source (which ticket/frame), what changed, what specbot will do downstream after merge
-   - Uses Octokit for the GitHub API
+1. Structured diff layer
+2. Pattern aggregator — weekly Slack/Linear post
+3. Eval harness — held-out (spec, expected ticket) pairs
+4. Self-improvement loop — eval-gated prompt updates
+5. Meeting transcript ingestion — Granola/Otter/Zoom → spec PRs
+6. Decision log auto-generation — Slack/ticket-comment scanning → ADRs
+7. Stakeholder summary generator — weekly leadership/eng/design digests
+8. Stale work detector with action proposals
+9. Roadmap reality checker
 
-3. **Webhook listener service** (`src/server/`)
-   - Express server with three webhook endpoints: `/webhook/linear`, `/webhook/jira`, `/webhook/figma`
-   - On webhook receipt: look up the spec mapping in state.json, run reverse analyzer, call spec PR generator
-   - Deployable as Docker container or Cloud Run/Fly.io app
-   - New CLI command: `specbot serve --port 3000`
+### v0.4 — Delivery surface
 
-4. **Merge-propagation** (GitHub webhook back to specbot)
-   - Listen for `pull_request.closed` events on spec PRs
-   - When a specbot-opened PR merges, run `generate` to propagate to other sides
-   - Update state.json with new content hashes
-
-5. **Loop prevention**
-   - Tag every change specbot makes with a hash in metadata
-   - Skip processing webhooks for changes specbot itself just wrote
-   - Already partially supported via the spec_hash in state.json
-
-### v0.3 — Delivery surface
-- Slack notifications when spec PRs are opened
-- Tauri menu bar app
-- Browser extension
-- Notion as a spec source
+Slack quick-actions, Tauri menu bar, browser extension, Notion as spec source.
 
 ## Adding a new ticket provider
 
 1. Create `src/integrations/your-provider.ts` implementing `TicketProvider`
 2. Register in `registry.ts`
-3. Done
-
-For v0.2, providers also need to support emitting webhook events. The interface will need a `verifyWebhook(payload, signature)` method.
+3. For v0.2, add `verifyWebhook(payload, signature)` to the interface
 
 ## Conventions
 
@@ -117,15 +109,5 @@ For v0.2, providers also need to support emitting webhook events. The interface 
 - Interfaces over types for public APIs
 - AI prompts return JSON only; strip markdown fences before parsing
 - ora spinners for async, chalk for color
-- State uses sha256 hashes (first 12 chars) for change detection
-
-## Writing style for `.md` files
-
-Apply these rules to every markdown file in the repo (README, CHANGELOG, ROADMAP, STATUS, CONTRIBUTING, specs, etc.).
-
-- Be concise. Cut any sentence that does not add information.
-- Use common words. Do not use "substrate", "scaffold" (as a noun for concepts), "primitive", "surface" (as a verb), "leverage", "orchestrate", or similar jargon. Prefer "basis", "baseline", "foundation", "starting point", "show", "use", "coordinate".
-- No figures of speech. No metaphors, analogies, or idioms ("under the hood", "out of the box", "boils down to", "north star", "source of truth" is acceptable only as the literal data term).
-- Be direct and precise. State what something is or does, not what it feels like.
-- No marketing adjectives: "powerful", "seamless", "robust", "elegant", "blazing", "first-class".
-- Prefer short sentences over long ones with semicolons or em-dash asides.
+- State uses sha256 hashes (first 12 chars)
+- v0.2+: log every LLM call with input and output to SQLite

@@ -1,128 +1,125 @@
 # Roadmap
 
-This document describes why specbot exists, how it is phased, and where it is going. Read this first if you want to understand the project direction or are considering a fork.
-
-## The problem
+## Problem
 
 Product teams maintain three systems that should agree but rarely do:
 
-- The spec — the PRD
-- The tickets — Linear, Jira, the engineering work breakdown
-- The designs — Figma frames and components
+- The spec (PRD, markdown doc)
+- The tickets (Linear, Jira)
+- The designs (Figma)
 
-When any one changes, the others fall out of date. The PM updates the spec and tickets do not reflect it. The designer or PM iterates in Figma and the spec does not capture it. An engineer changes a ticket's scope and nobody updates the spec or design.
+When one changes, the others go stale. Existing tools either generate tickets one-way from a spec (and stop syncing once the spec changes) or try to sync everything to everything (which creates conflicts when three sources can all write to each other).
 
-Existing tools take one of two approaches:
+## Approach
 
-One-way generators (PRD → tickets) become inconsistent as soon as the spec changes. Tickets fall out of date after a PRD change.
+Route every change through the spec as a merge point. Use an LLM agent to direct the routing.
 
-Omnidirectional sync (every system writes to every other) creates conflicts that have no clear resolution. When the spec says "3-step wizard", Figma shows 2 steps, and the ticket says 4 — which one wins? You get either silent overwrites or a custom merge UI, and a merge UI is its own product.
+When a ticket or design changes, the agent decides whether to open a spec PR immediately, batch the change with other recent changes, ask the PM in Slack for clarification, or pause if it detects a possible loop. The PM reviews and merges spec PRs. After merge, downstream sync updates the other systems.
 
-## The specbot approach
+Over time, specbot logs how teams edit its outputs, identifies patterns, and proposes prompt updates that pass an eval harness before shipping.
 
-Route every change through the spec.
+## Why this isn't replaceable by a Claude conversation with MCPs
 
-Any side can propose changes. A ticket edit in Linear, a frame change in Figma — specbot detects it and opens a PR against the spec file in your repo. The PM reviews the spec PR, decides what is authoritative, and merges. Once merged, specbot propagates the change to the other sides.
+A Claude chat with Linear/Figma MCPs can generate tickets. It cannot:
 
-This gives bidirectional awareness without ambiguous conflicts. The spec PR is the human review step. The rest is automation.
+- Run continuously without human prompting (webhook listener)
+- Open PRs as a side-effect of a webhook
+- Maintain state across sessions
+- Run in CI
+- Log every interaction and learn from edits over time
+- Be installed by other teams without prompting expertise
 
-## Why this is hard to build as a chat workflow
+v0.1 (one-way generation) is replaceable. v0.2 and v0.3 are not.
 
-If Claude has Linear, Jira, and Figma MCP connectors, why build a separate tool? Conversations can't:
+## What this becomes that Linear or Jira won't build
 
-- Run continuously without human prompting (webhook listeners)
-- Open PRs in response to a webhook firing
-- Maintain state across sessions (which spec sections map to which tickets)
-- Run in CI (a GitHub Action can't open a Claude session)
-- Be installed and configured by other teams without prompting expertise
-
-The CLI in v0.1 does ticket generation, which Claude can do directly. The persistent service in v0.2 is what makes specbot different. v0.1 is the basis. v0.2 is the sync engine.
+Linear and Jira will ship AI ticket generation within a year. They will not ship a tool that operates *between* their product, the design tool, the spec repo, and Slack — because no single vendor owns that surface. The cross-tool agent is the part that can't be commoditized.
 
 ## Phasing
 
-### v0.1 — Foundation (current)
+### v0.1 — Foundation (built)
 
-Goal: build the baseline that v0.2 will use.
+Goal: A working CLI that generates tickets from a spec and detects drift. Validates the AI quality and integration layer before adding agentic logic.
 
-This phase ships the spec parser, AI generation pipeline, pluggable provider interface, state tracking, and basic drift detection. It also ships a working CLI so the project is useful on its own, even before the bidirectional sync engine exists.
-
-What's built:
-
+Built:
 - Spec parser (markdown → structured sections)
-- AI ticket generation with acceptance criteria
-- Pluggable `TicketProvider` interface (Linear and Jira implemented)
-- Figma comment posting on generate
-- State tracking with sha256 content hashes
+- AI ticket generation
+- Pluggable `TicketProvider` interface (Linear, Jira)
+- Figma comment posting
+- State tracking with content hashes
 - Drift detection (`specbot sync`)
 - Figma audit (`specbot audit`)
-- GitHub Action for sync checks on PRs
+- GitHub Action for PR sync checks
 
-What v0.1 does not do:
+Deliberately not in v0.1:
+- Reaction to ticket or Figma changes
+- Spec PR generation
+- Continuous service
+- Anything bidirectional or agentic
 
-- React to changes in tickets or Figma automatically
-- Open spec PRs when downstream systems change
-- Run as a continuous service
-- Anything bidirectional
+### v0.2 — Agentic sync engine + capture layer
 
-This is by design. v0.1 validates the AI quality, the integration layer, and the state model before the bidirectional logic is added.
-
-### v0.2 — The sync engine (next)
-
-Goal: build the spec-arbitrated sync engine.
-
-v0.1 components are reused. New components are added.
+Goal: Make the LLM the orchestrator. Log every interaction so v0.3 has training data.
 
 Build order:
 
 1. **Reverse-direction analyzer** (`src/core/reverse-analyzer.ts`) — given a ticket and its mapped spec section, produce a markdown diff describing how they've diverged.
 
-2. **Spec PR generator** (`src/core/spec-pr.ts`) — apply the diff to the spec file, open a GitHub PR with the source (which ticket, which Figma frame) as PR context. Uses Octokit.
+2. **Spec PR generator** (`src/core/spec-pr.ts`) — apply the diff to the spec file, open a GitHub PR with PM-grade descriptions: source (which ticket, which Figma frame), what changed, what specbot will propagate after merge. Uses Octokit.
 
-3. **Webhook listener service** (`src/server/`) — Express server with three endpoints (`/webhook/linear`, `/webhook/jira`, `/webhook/figma`). On webhook receipt, look up the spec mapping, run reverse analyzer, generate spec PR. New CLI command: `specbot serve --port 3000`. Deployable as Docker container or to Cloud Run / Fly.io.
+3. **Investigation agent** (`src/core/agent.ts`) — when a webhook fires, the LLM decides the action: open a PR now, batch with other recent changes, ping the PM in Slack, or pause for loop detection. This is the agentic component.
 
-4. **Merge-propagation** — listen for `pull_request.closed` events on spec PRs. When a specbot-opened PR merges, run `generate` to propagate the change to other sides. Update state.json with new content hashes.
+4. **Webhook listener service** (`src/server/`) — Express server with `/webhook/linear`, `/webhook/jira`, `/webhook/figma` endpoints. New CLI: `specbot serve --port 3000`. Deployable to Cloud Run or Fly.io.
 
-5. **Loop prevention** — tag every change specbot makes with a hash in metadata. Skip processing webhooks for changes specbot itself just wrote. Partial groundwork is already in state.json.
+5. **Merge-propagation** — listen for `pull_request.closed` events. When a specbot-opened PR merges, run downstream sync.
 
-Design choices for v0.2:
+6. **Loop prevention** — tag every change specbot makes with a hash. Skip processing webhooks for changes specbot just wrote.
 
-- Spec as merge point is the design choice that defines specbot. Letting Linear webhooks update the spec directly, without a PR, would remove the human review step. The PR is required.
+7. **PRD ambiguity scanner** — pre-generation step that flags vague verbs ("automatically," "smoothly"), undefined terms, missing edge cases, and conflicting requirements between sections.
 
-- GitHub PRs as the merge UI. Specbot does not build a custom merge tool. PRs already have review, comments, line-level diffs, and CI hooks.
+8. **Acceptance criteria regression detector** — when a ticket is edited externally, compare new AC against the original. Flag any that were weakened or removed.
 
-- Stateless reverse analyzer. The analyzer is a pure function: take a ticket and a spec section, return a diff. State lives in `.specbot/state.json` and the spec's git history.
+9. **Artifact capture layer** — every run writes a job folder: full spec context, prompt sent to Claude, raw response, draft tickets, post-edit ticket state 24-48h later. Stored in SQLite. No learning logic yet — just disciplined logging. v0.3 will use this data.
 
-### v0.3 — Delivery surface
+### v0.3 — Learning loop + cross-tool extraction
 
-Goal: make the v0.2 engine usable without a terminal.
+Goal: Specbot gets measurably better over time. Extends to meetings, Slack, and decisions across the full product surface.
 
-Planned:
+Components:
 
-- Slack notifications when spec PRs are opened, with action buttons (approve, request changes, dismiss).
-- Tauri menu bar app that triggers sync manually, shows recent activity, and notifies when a spec PR is waiting.
-- Browser extension to trigger sync from Linear, Jira, or Figma pages directly.
-- Notion as a spec source — read PRDs from Notion in addition to or instead of markdown files in a repo.
+1. **Structured diff layer** — field-level comparison between draft and final ticket. Title, description, AC, labels.
 
-The engine is the product. This phase makes it accessible.
+2. **Pattern aggregator** — weekly job that posts to Slack or Linear: "I noticed 3 patterns in how your team edits my tickets. Want me to adjust? [Show diff] [Apply] [Reject]."
 
-### Beyond v0.3
+3. **Eval harness** — held-out set of (spec, expected ticket) pairs. Every prompt change runs against the eval before shipping.
 
-Open questions:
+4. **Self-improvement loop** — propose prompt updates from aggregated patterns. Validate via eval. Surface to user for approval before shipping.
 
-- Spec quality scoring. Before generating tickets, audit the spec for ambiguity, missing edge cases, and undefined terms.
-- Decision log generation. Read ticket comments and Figma comments. Extract decisions ("we're going with option B because X") and write them to a `decisions/` folder as ADRs.
-- Roadmap reality checker. Compare the stated roadmap against actual ticket flow and PR rate. Show where reality has diverged from intent.
+5. **Meeting transcript ingestion** — drop a Granola, Otter, or Zoom transcript into specbot. Agent extracts decisions, proposes spec updates, flags decisions that contradict existing spec content. Highest-impact v0.3 feature.
 
-These share the same approach: PM tools that maintain state and run continuously. Whether they belong in specbot or in separate forks is open.
+6. **Decision log auto-generation** — agent watches Slack channels and ticket comments. Detects decision phrases ("we're going with option B," "punting to Q2"). Writes structured ADRs to a `decisions/` folder.
 
-## Why specbot is designed to be forked
+7. **Stakeholder summary generator** — weekly digest of changes across all projects, in three flavors: leadership, engineering, design.
 
-The core idea (spec as merge point) is general. The implementation choices (Linear, Jira, Figma, markdown specs in git) are specific. Different teams will want different combinations:
+8. **Stale work detector with action proposals** — agent finds tickets that haven't moved in N days, reads the ticket, checks linked PRs and Slack mentions, proposes specific actions ("close as obsolete," "ping engineer X," "merge with ticket Y").
 
-- A startup might want Notion specs, Linear tickets, and Penpot designs
-- An enterprise might need Confluence specs, Jira tickets, and Sketch
-- A solo founder might want markdown specs and only Linear, no design tool
+9. **Roadmap reality checker** — compares stated roadmap against actual ticket flow and PR velocity. Outputs honest assessments: "you committed to X this quarter, 30% of those tickets are in progress, 2 linked PRs are stalled."
 
-The pluggable provider interface (`src/integrations/types.ts`) makes a fork a small change, not a rewrite. The same pattern extends to spec sources and design tools.
+### v0.4 — Delivery surface
 
-If your team needs something that does not exist yet: fork, implement the interface, and contribute the change back if it is general.
+Goal: Make v0.2 and v0.3 features accessible without a terminal.
+
+- Slack notifications and quick-action buttons (approve, request changes, dismiss spec PRs)
+- Tauri menu bar app for manual sync and recent activity
+- Browser extension to trigger sync from Linear, Jira, or Figma pages
+- Notion as a spec source
+
+## Why this is designed to be forked
+
+The thesis (spec as merge point, agent-directed routing, learning loop) is general. The implementation choices (Linear, Jira, Figma, markdown, SQLite) are specific. Teams will want different combinations:
+
+- A startup might want Notion specs, Linear tickets, Penpot designs
+- An enterprise might need Confluence, Jira, Sketch
+- A solo founder might want markdown specs and Linear only
+
+The pluggable provider interface (`src/integrations/types.ts`) makes adding a new system a one-hour job. Same pattern extends to spec sources, design tools, and (in v0.3) decision sources.

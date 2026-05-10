@@ -1,45 +1,64 @@
-# Project status
+# Project Status
 
-Current version: v0.1.0 — Foundation phase.
+**Current version:** v0.1.0 — Foundation phase
 
-## What is in this codebase
+## What this codebase contains
 
-This repository contains v0.1 only. v0.1 is the foundation phase: a CLI for one-way spec-to-ticket generation, drift detection, and Figma audit. It is useful on its own. It is not the full project plan.
+This repository contains v0.1 only. v0.1 is a working CLI for one-way spec-to-ticket generation, drift detection, and Figma audit.
 
 ## What v0.1 includes
 
-- Spec parser (markdown → structured sections)
-- AI-driven ticket generation
-- Linear integration
-- Jira integration
-- Figma comment posting on generate
-- State tracking with content hashes
-- Drift detection (`specbot sync`)
-- Figma audit (`specbot audit`)
-- GitHub Action for PR sync checks
-- Pluggable provider interface
+- ✅ Spec parser (markdown → structured sections)
+- ✅ AI ticket generation
+- ✅ Linear integration
+- ✅ Jira integration
+- ✅ Figma comment posting on generate
+- ✅ State tracking with content hashes
+- ✅ Drift detection (`specbot sync`)
+- ✅ Figma audit (`specbot audit`)
+- ✅ GitHub Action for PR sync checks
+- ✅ Pluggable provider interface for forkers
 
 ## What v0.1 does not include
 
-These are not built yet. They are planned for v0.2:
+These are not built yet:
 
-- Reverse-direction analysis (ticket changes → spec diff)
-- Automatic spec PR generation
-- Webhook listener service
-- Continuous, automatic sync
-- Merge propagation
-- Loop prevention
+**v0.2 — Agentic sync engine + capture layer:**
+- ❌ Investigation agent (LLM directs control flow on webhook receipt)
+- ❌ Reverse-direction analysis (ticket changes → spec diff)
+- ❌ Spec PR generator
+- ❌ Webhook listener service
+- ❌ Merge-propagation
+- ❌ Loop prevention
+- ❌ PRD ambiguity scanner
+- ❌ Acceptance criteria regression detector
+- ❌ Artifact capture layer (logs all LLM interactions for v0.3)
 
-If you came here for the bidirectional sync engine described in the README, that is v0.2. v0.1 is the basis for it.
+**v0.3 — Learning loop + cross-tool extraction:**
+- ❌ Structured diff layer
+- ❌ Pattern aggregator
+- ❌ Eval harness
+- ❌ Self-improvement loop
+- ❌ Meeting transcript ingestion
+- ❌ Decision log auto-generation
+- ❌ Stakeholder summary generator
+- ❌ Stale work detector with action proposals
+- ❌ Roadmap reality checker
 
-## Why ship v0.1 on its own
+**v0.4 — Delivery surface:**
+- ❌ Slack notifications and quick-action buttons
+- ❌ Tauri menu bar app
+- ❌ Browser extension
+- ❌ Notion as a spec source
 
-v0.1 is useful on its own: it generates tickets from specs, posts Figma comments, and detects drift. Teams can use it today as a one-way generator with manual sync checks.
+The agentic sync engine described in the README is v0.2 and v0.3. v0.1 is the working baseline they will be built on.
 
-Shipping it on its own also validates the AI quality, the integration layer, and the state model before the bidirectional logic is added.
+## Why v0.1 ships standalone
 
-## When v0.2 ships
+v0.1 is independently useful: it generates tickets from specs, posts Figma comments, and detects drift. Teams can use it today as a one-way generator with manual sync checks.
 
-v0.2 work has not started yet. See [ROADMAP.md](ROADMAP.md) for phasing and build order.
+Shipping v0.1 alone validates the AI quality, integration layer, and state model before adding the agentic and learning logic on top.
 
-To track or contribute to v0.2, watch this repository or check the [issues](../../issues) tab.
+## v0.2 status
+
+Not started. See [ROADMAP.md](ROADMAP.md) for the full build order.
