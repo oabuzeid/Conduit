@@ -66,9 +66,17 @@ export class JiraProvider implements TicketProvider {
     projectId: string,
     input: CreateTicketInput
   ): Promise<{ id: string; key: string }> {
-    // Determine issue type: if it has a parent, it's a Sub-task; otherwise Story.
-    // For epics, the caller should handle the issuetype separately in the future.
-    const issueType = input.parentId ? "Sub-task" : "Story";
+    const typeMap: Record<NonNullable<CreateTicketInput["type"]>, string> = {
+      epic: "Epic",
+      story: "Story",
+      task: "Subtask",
+    };
+    const issueType =
+      input.type && typeMap[input.type]
+        ? typeMap[input.type]
+        : input.parentId
+          ? "Subtask"
+          : "Story";
 
     const fields: Record<string, unknown> = {
       project: { id: projectId },

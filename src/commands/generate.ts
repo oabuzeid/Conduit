@@ -112,6 +112,7 @@ export async function runGenerate(options: GenerateOptions): Promise<void> {
         title: ticket.title,
         description: formatDescription(ticket),
         labels: labelIds,
+        type: ticket.type,
       });
       createdMap.set(ticket.title, result.id);
 
@@ -137,6 +138,7 @@ export async function runGenerate(options: GenerateOptions): Promise<void> {
         description: formatDescription(ticket),
         parentId,
         labels: labelIds,
+        type: ticket.type,
       });
       createdMap.set(ticket.title, result.id);
 
