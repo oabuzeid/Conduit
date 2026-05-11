@@ -3,3 +3,4 @@ dist/
 .conduit/
 .env
 *.tgz
+.DS_Store
