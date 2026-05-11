@@ -74,6 +74,7 @@ Audience: developer.
 1. Configurable ticket breakdown — `breakdown` config: `by_section`, `by_layer`, `by_component`, `custom`. This becomes the action space the v0.2 agent operates over.
 2. Project-level acceptance criteria format — replace `detail_level` with `ac_format` object (include_background, include_figma_links, format, max_count). Configured once per project, not per ticket.
 3. Default opinionated tone hard-coded in AI engine prompts. Override available in YAML but not in example config.
+4. Per-project significant-change threshold for Figma — `conduit.yaml` config. Consumed by v0.2's design-side change classifier to decide which Figma changes are worth surfacing.
 
 ### v0.2 — Agentic engine + capture layer
 
@@ -89,6 +90,7 @@ Audience: developer. No user-facing surface.
 8. PRD ambiguity scanner — pre-generation step
 9. AC regression detector — flag weakened acceptance criteria
 10. Artifact capture layer — every run logged to SQLite. No learning yet, just capture. v0.4 will use this.
+11. Design-side change classifier — hybrid structural + semantic diffing for Figma webhook events. Structural pre-filter (added/removed frames, material text changes) gates a Claude classification call: `new_screen_added`, `screen_removed`, `significant_copy_change`, or `ignore`. Threshold set per project in v0.1.x. Feeds the investigation agent.
 
 ### v0.3 — Slack workflow (the product launches here)
 
@@ -103,6 +105,7 @@ Audience: real PMs. This is the most important phase.
 7. Spec PR approval flow — v0.2's agent proposes spec PRs; user approves in Slack
 8. Tone override from Slack — default tone stays opinionated; user can override
 9. "Conduit is learning your team's patterns" placeholder — UI shell for v0.4
+10. Design-change Slack alerts — when v0.2's classifier flags a significant Figma change, surface it in the project thread. Actions: accept and propagate (spec PR + downstream ticket updates), dismiss, or modify before propagation.
 
 v0.3 success determines project success. It's the only phase non-technical PMs touch.
 

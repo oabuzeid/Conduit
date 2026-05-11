@@ -27,6 +27,7 @@ These are not built yet:
 - ❌ Configurable ticket breakdown (by_section, by_layer, by_component, custom)
 - ❌ Project-level acceptance criteria format
 - ❌ Default opinionated tone hard-coded in AI engine prompts
+- ❌ Per-project significant-change threshold for Figma (consumed by v0.2's design-side classifier)
 
 **v0.2 — Agentic engine + capture layer:**
 - ❌ Investigation agent (LLM directs control flow on webhook receipt)
@@ -39,6 +40,7 @@ These are not built yet:
 - ❌ PRD ambiguity scanner
 - ❌ Acceptance criteria regression detector
 - ❌ Artifact capture layer (SQLite logs for v0.4)
+- ❌ Design-side change classifier (structural pre-filter + Claude semantic classification of Figma webhook events)
 
 **v0.3 — Slack workflow (the product launches here):**
 - ❌ Conduit Slack app
@@ -50,6 +52,7 @@ These are not built yet:
 - ❌ Spec PR approval flow in Slack
 - ❌ Tone override from Slack
 - ❌ Learning placeholder UI
+- ❌ Design-change Slack alerts (accept/dismiss/modify proposed changes from Figma)
 
 **v0.4 — Learning loop on captured data:**
 - ❌ Structured diff layer

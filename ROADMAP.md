@@ -63,6 +63,8 @@ Goal: Address known gaps in v0.1's flexibility before adding agentic logic on to
 
 3. **Default tone in AI engine prompts** — hard-code the opinionated tone (concise, direct, no figures of speech, no jargon) in the prompts. Tone is overridable in YAML but not surfaced in the example config. v0.3 will expose tone as a user-facing setting in Slack.
 
+4. **Per-project significant-change threshold for Figma** — `conduit.yaml` accepts a threshold (e.g. min frames added/removed, min characters of text change, scope of affected sections) that defines what counts as a "significant" Figma change worth surfacing. Consumed by v0.2's design-side change classifier; the value lives here so it's set once at project setup rather than per-event.
+
 ### v0.2 — Agentic engine + capture layer
 
 Audience: developer.
@@ -91,6 +93,8 @@ Build order:
 
 10. **Artifact capture layer** — every run writes a job folder: full spec context, prompt sent to Claude, raw response, draft tickets, post-edit ticket state 24-48h later. Stored in SQLite. No learning logic — just disciplined logging. v0.4 will use this data.
 
+11. **Design-side change classifier** — hybrid structural + semantic diffing for Figma webhook events. A structural pre-filter detects added frames, removed frames, and material text changes; anything that passes the per-project threshold (set in v0.1.x) is sent to Claude for semantic classification: `new_screen_added`, `screen_removed`, `significant_copy_change`, or `ignore`. Outputs a structured change description that feeds the investigation agent (#3). Keeps Claude off the cheap-to-detect cases and reserves it for the judgment calls.
+
 v0.2 stays CLI- and YAML-only. No user-facing surface.
 
 ### v0.3 — Slack workflow (the product launches here)
@@ -118,6 +122,8 @@ Components:
 8. **Tone override** — user can change tone from the Slack thread ("make these more concise"). Default tone remains opinionated.
 
 9. **"Conduit is learning your team's patterns" placeholder** — surface a weekly thread message even before the actual learning loop is wired up. This is the UI shell v0.4 will attach real learning to. Keeps the product feeling alive and gives users a touchpoint for the eventual learning features.
+
+10. **Design-change Slack alerts** — when v0.2's classifier surfaces a significant Figma change, Conduit posts to the relevant project thread with a one-line summary and the structured change description. Three actions: accept and propagate (Conduit opens a spec PR and, after merge, updates the affected tickets), dismiss (suppress this change), or modify (edit the proposed spec change before propagation). This is the first time a real PM sees the design-side sync loop close end-to-end.
 
 v0.3 is the most important release. It's the only phase a non-technical PM will ever touch. The success of the project depends on how good v0.3 feels to use.
 
