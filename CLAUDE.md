@@ -139,6 +139,14 @@ Audience: PMs.
 2. Register in `registry.ts`
 3. For v0.2, add `verifyWebhook(payload, signature)` to the interface
 
+## Ticket-writing rules
+
+These apply to any ticket conduit generates or updates, regardless of project. They should be encoded in the `generate` prompt (`src/core/ai-engine.ts`) as part of v0.1.x; until then, apply them manually.
+
+- **Every ticket describes implementation work.** Do not emit overview, background, or context tickets that only restate the PRD. If a spec section produces no concrete change to make, no ticket should result from it. Borderline cases (Problems, Goals, Principles, Opportunity sections): only emit a ticket if the AC would be measurable or testable — never "the team understands X."
+- **Ignore open questions when writing AC.** Anything the spec flags as unresolved — blockquote asides marked with `>`, items in "Open Questions" or "Design Questions" sections, MVP-scope items marked with `?` — must not appear in build-ticket AC. Track open questions in their own decision-style tickets whose deliverable is "produce a documented decision on X."
+- **Don't invent product behavior to reconcile design/spec mismatches.** When a design shows different values, states, or copy than the spec, flag the discrepancy and ask which is authoritative. Do not introduce a feature (e.g. "the rate is per-trip configurable") to make both sides true. Spec wins by default; designs are usually the moving artifact.
+
 ## Conventions
 
 - ESM with .js import extensions
