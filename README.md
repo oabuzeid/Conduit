@@ -1,4 +1,4 @@
-# Specbot
+# Conduit
 
 A spec-arbitrated sync engine for product teams.
 
@@ -8,14 +8,14 @@ A spec-arbitrated sync engine for product teams.
 
 Most product teams have three systems that should agree but rarely do: the spec (PRD, markdown doc), the tickets (Linear, Jira), and the designs (Figma). When any one changes, the others fall out of date.
 
-Specbot's approach: route every change through the spec. Any side can propose changes — a ticket edit in Linear, a frame change in Figma — and specbot opens a PR against the spec. The PM reviews and merges. Once merged, specbot propagates the change to the other sides.
+Conduit's approach: route every change through the spec. Any side can propose changes — a ticket edit in Linear, a frame change in Figma — and conduit opens a PR against the spec. The PM reviews and merges. Once merged, conduit propagates the change to the other sides.
 
 This avoids three-way live sync conflicts while keeping teams bidirectionally aware.
 
 ## How it differs
 
-- Not just a generator: Most AI ticket tools are one-shot: PRD in, tickets out. Specbot maintains the relationship over time.
-- Not omnidirectional: Three-way live sync between docs, tickets, and designs creates conflicts that have no clear resolution. Specbot routes every change through the spec.
+- Not just a generator: Most AI ticket tools are one-shot: PRD in, tickets out. Conduit maintains the relationship over time.
+- Not omnidirectional: Three-way live sync between docs, tickets, and designs creates conflicts that have no clear resolution. Conduit routes every change through the spec.
 - Not a chat workflow: A webhook listener that runs continuously and opens PRs without human prompting is not something a Claude conversation can do.
 - Pluggable: Adding a new ticket system, design tool, or doc source means implementing one interface and registering it.
 
@@ -23,39 +23,39 @@ This avoids three-way live sync conflicts while keeping teams bidirectionally aw
 
 | Command | What it does |
 |---------|-------------|
-| `specbot init` | Create config and example spec |
-| `specbot generate` | Specs → AI → tickets (Linear/Jira) + Figma comments |
-| `specbot generate --dry-run -v` | Preview without pushing |
-| `specbot sync` | Detect drift between specs and tickets |
-| `specbot audit` | Compare Figma designs against specs |
+| `conduit init` | Create config and example spec |
+| `conduit generate` | Specs → AI → tickets (Linear/Jira) + Figma comments |
+| `conduit generate --dry-run -v` | Preview without pushing |
+| `conduit sync` | Detect drift between specs and tickets |
+| `conduit audit` | Compare Figma designs against specs |
 
 These commands are the basis for v0.2. v0.2 adds the webhook listener service that runs continuously and proposes spec PRs automatically.
 
 ## Quick start
 
 ```bash
-npm install -g specbot
+npm install -g conduit
 cd your-project
-specbot init
+conduit init
 
 export ANTHROPIC_API_KEY="sk-ant-..."
 export LINEAR_API_KEY="lin_api_..."   # or JIRA_* vars
 
-specbot generate --dry-run -v
-specbot generate
+conduit generate --dry-run -v
+conduit generate
 ```
 
 ## Configuration
 
 ```yaml
-# specbot.yaml
+# conduit.yaml
 specs:
   - "specs/**/*.md"
 
 tickets:
   provider: linear       # linear | jira
   project: "ENG"
-  labels: ["specbot-managed"]
+  labels: ["conduit-managed"]
 
 design:                   # optional
   provider: figma
@@ -72,9 +72,9 @@ Spec as source of truth. H1 is an epic, H2 is a story, checkboxes are tasks.
 
 Pluggable providers. Linear and Jira are built in. To add a new provider, implement one interface and register it.
 
-Figma integration. On `generate`, specbot posts comments on matching frames. On `audit`, it compares the tree against your spec.
+Figma integration. On `generate`, conduit posts comments on matching frames. On `audit`, it compares the tree against your spec.
 
-State tracking. `.specbot/state.json` maps spec sections to ticket IDs with content hashes. v0.2 uses this for loop prevention and reverse-direction analysis.
+State tracking. `.conduit/state.json` maps spec sections to ticket IDs with content hashes. v0.2 uses this for loop prevention and reverse-direction analysis.
 
 GitHub Action. Runs sync on PRs that touch spec files and comments the result on the PR.
 
@@ -98,7 +98,7 @@ For why this project exists, how it is phased, and where it is going:
 
 ## Contributing
 
-Specbot is designed to be forked. The most useful contributions are:
+Conduit is designed to be forked. The most useful contributions are:
 
 1. New ticket providers — implement `TicketProvider` from `src/integrations/types.ts`, register in `registry.ts`
 2. New spec sources — currently markdown files. Notion, Coda, and Confluence are reasonable additions.

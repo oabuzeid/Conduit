@@ -1,6 +1,6 @@
 # Vehicle Photo Quality Scoring
 
-> Sample spec. This is a fictional Turo-style feature used to test specbot. It is not a real Turo product, roadmap item, or commitment. The terminology (hosts, listings, guests, bookings) is borrowed from Turo's domain to make the example realistic.
+> Sample spec. This is a fictional Turo-style feature used to test conduit. It is not a real Turo product, roadmap item, or commitment. The terminology (hosts, listings, guests, bookings) is borrowed from Turo's domain to make the example realistic.
 
 Automated system to score and flag low-quality vehicle listing photos using computer vision, with the goal of improving marketplace trust and booking conversion.
 

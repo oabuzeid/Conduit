@@ -14,8 +14,8 @@ This repository contains v0.1 only. v0.1 is a working CLI for one-way spec-to-ti
 - ✅ Jira integration
 - ✅ Figma comment posting on generate
 - ✅ State tracking with content hashes
-- ✅ Drift detection (`specbot sync`)
-- ✅ Figma audit (`specbot audit`)
+- ✅ Drift detection (`conduit sync`)
+- ✅ Figma audit (`conduit audit`)
 - ✅ GitHub Action for PR sync checks
 - ✅ Pluggable provider interface for forkers
 

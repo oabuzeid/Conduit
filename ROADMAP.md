@@ -16,7 +16,7 @@ Route every change through the spec as a merge point. Use an LLM agent to direct
 
 When a ticket or design changes, the agent decides whether to open a spec PR immediately, batch the change with other recent changes, ask the PM in Slack for clarification, or pause if it detects a possible loop. The PM reviews and merges spec PRs. After merge, downstream sync updates the other systems.
 
-Over time, specbot logs how teams edit its outputs, identifies patterns, and proposes prompt updates that pass an eval harness before shipping.
+Over time, conduit logs how teams edit its outputs, identifies patterns, and proposes prompt updates that pass an eval harness before shipping.
 
 ## Why this isn't replaceable by a Claude conversation with MCPs
 
@@ -42,8 +42,8 @@ Built:
 - Pluggable `TicketProvider` interface (Linear, Jira)
 - Figma comment posting
 - State tracking with content hashes
-- Drift detection (`specbot sync`)
-- Figma audit (`specbot audit`)
+- Drift detection (`conduit sync`)
+- Figma audit (`conduit audit`)
 - GitHub Action for PR sync checks
 
 Deliberately not in v0.1:
@@ -60,15 +60,15 @@ Build order:
 
 1. **Reverse-direction analyzer** (`src/core/reverse-analyzer.ts`) — given a ticket and its mapped spec section, produce a markdown diff describing how they've diverged.
 
-2. **Spec PR generator** (`src/core/spec-pr.ts`) — apply the diff to the spec file, open a GitHub PR with PM-grade descriptions: source (which ticket, which Figma frame), what changed, what specbot will propagate after merge. Uses Octokit.
+2. **Spec PR generator** (`src/core/spec-pr.ts`) — apply the diff to the spec file, open a GitHub PR with PM-grade descriptions: source (which ticket, which Figma frame), what changed, what conduit will propagate after merge. Uses Octokit.
 
 3. **Investigation agent** (`src/core/agent.ts`) — when a webhook fires, the LLM decides the action: open a PR now, batch with other recent changes, ping the PM in Slack, or pause for loop detection. This is the agentic component.
 
-4. **Webhook listener service** (`src/server/`) — Express server with `/webhook/linear`, `/webhook/jira`, `/webhook/figma` endpoints. New CLI: `specbot serve --port 3000`. Deployable to Cloud Run or Fly.io.
+4. **Webhook listener service** (`src/server/`) — Express server with `/webhook/linear`, `/webhook/jira`, `/webhook/figma` endpoints. New CLI: `conduit serve --port 3000`. Deployable to Cloud Run or Fly.io.
 
-5. **Merge-propagation** — listen for `pull_request.closed` events. When a specbot-opened PR merges, run downstream sync.
+5. **Merge-propagation** — listen for `pull_request.closed` events. When a conduit-opened PR merges, run downstream sync.
 
-6. **Loop prevention** — tag every change specbot makes with a hash. Skip processing webhooks for changes specbot just wrote.
+6. **Loop prevention** — tag every change conduit makes with a hash. Skip processing webhooks for changes conduit just wrote.
 
 7. **PRD ambiguity scanner** — pre-generation step that flags vague verbs ("automatically," "smoothly"), undefined terms, missing edge cases, and conflicting requirements between sections.
 
@@ -78,7 +78,7 @@ Build order:
 
 ### v0.3 — Learning loop + cross-tool extraction
 
-Goal: Specbot gets measurably better over time. Extends to meetings, Slack, and decisions across the full product surface.
+Goal: Conduit gets measurably better over time. Extends to meetings, Slack, and decisions across the full product surface.
 
 Components:
 
@@ -90,7 +90,7 @@ Components:
 
 4. **Self-improvement loop** — propose prompt updates from aggregated patterns. Validate via eval. Surface to user for approval before shipping.
 
-5. **Meeting transcript ingestion** — drop a Granola, Otter, or Zoom transcript into specbot. Agent extracts decisions, proposes spec updates, flags decisions that contradict existing spec content. Highest-impact v0.3 feature.
+5. **Meeting transcript ingestion** — drop a Granola, Otter, or Zoom transcript into conduit. Agent extracts decisions, proposes spec updates, flags decisions that contradict existing spec content. Highest-impact v0.3 feature.
 
 6. **Decision log auto-generation** — agent watches Slack channels and ticket comments. Detects decision phrases ("we're going with option B," "punting to Q2"). Writes structured ADRs to a `decisions/` folder.
 

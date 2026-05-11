@@ -1,11 +1,11 @@
-name: Specbot Sync Check
+name: Conduit Sync Check
 
 on:
   pull_request:
     paths:
       - "specs/**"
       - "docs/prd.md"
-      - "specbot.yaml"
+      - "conduit.yaml"
 
 jobs:
   sync-check:
@@ -23,17 +23,17 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Install specbot
-        run: npm install -g specbot
+      - name: Install conduit
+        run: npm install -g conduit
 
-      - name: Run specbot sync
+      - name: Run conduit sync
         id: sync
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
         run: |
           set +e
-          OUTPUT=$(specbot sync 2>&1)
+          OUTPUT=$(conduit sync 2>&1)
           EXIT_CODE=$?
           set -e
           echo "$OUTPUT"
@@ -54,11 +54,11 @@ jobs:
 
             let icon, title, status;
             if (exitCode !== 0) {
-              icon = '⚠️'; title = 'Specbot sync encountered an error'; status = 'error';
+              icon = '⚠️'; title = 'Conduit sync encountered an error'; status = 'error';
             } else if (driftCount === 0) {
               icon = '✅'; title = 'Specs and tickets are in sync'; status = 'ok';
             } else {
-              icon = '🔍'; title = `Specbot found ${driftCount} drift item(s)`; status = 'drift';
+              icon = '🔍'; title = `Conduit found ${driftCount} drift item(s)`; status = 'drift';
             }
 
             const body = [
@@ -67,10 +67,10 @@ jobs:
               status === 'drift' ? '> **Action needed:** Review the drift above and update tickets or specs as needed.'
                 : status === 'ok' ? '> No action needed — everything is consistent.'
                 : '> Sync failed. Check that API key secrets are configured.',
-              '', '---', '_Posted by [specbot](https://github.com/othmanabuzeid/specbot)_'
+              '', '---', '_Posted by [conduit](https://github.com/othmanabuzeid/conduit)_'
             ].join('\n');
 
-            const marker = '_Posted by [specbot]';
+            const marker = '_Posted by [conduit]';
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number,
             });

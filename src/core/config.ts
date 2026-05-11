@@ -2,7 +2,7 @@ import { readFileSync, existsSync } from "fs";
 import { parse as parseYaml } from "yaml";
 import { resolve } from "path";
 
-export interface SpecbotConfig {
+export interface ConduitConfig {
   specs: string[];
   tickets: {
     provider: "linear" | "jira";
@@ -29,23 +29,23 @@ export interface SpecbotConfig {
   };
 }
 
-const CONFIG_FILENAMES = ["specbot.yaml", "specbot.yml", ".specbot.yaml"];
+const CONFIG_FILENAMES = ["conduit.yaml", "conduit.yml", ".conduit.yaml"];
 
-export function loadConfig(dir: string = process.cwd()): SpecbotConfig {
+export function loadConfig(dir: string = process.cwd()): ConduitConfig {
   for (const filename of CONFIG_FILENAMES) {
     const filepath = resolve(dir, filename);
     if (existsSync(filepath)) {
       const raw = readFileSync(filepath, "utf-8");
-      const parsed = parseYaml(raw) as Partial<SpecbotConfig>;
+      const parsed = parseYaml(raw) as Partial<ConduitConfig>;
       return applyDefaults(parsed);
     }
   }
   throw new Error(
-    `No specbot config found. Create a specbot.yaml in your repo root.\nRun: specbot init`
+    `No conduit config found. Create a conduit.yaml in your repo root.\nRun: conduit init`
   );
 }
 
-function applyDefaults(partial: Partial<SpecbotConfig>): SpecbotConfig {
+function applyDefaults(partial: Partial<ConduitConfig>): ConduitConfig {
   return {
     specs: partial.specs ?? ["specs/**/*.md"],
     tickets: {
@@ -56,7 +56,7 @@ function applyDefaults(partial: Partial<SpecbotConfig>): SpecbotConfig {
         story: partial.tickets?.mapping?.story ?? "h2",
         task: partial.tickets?.mapping?.task ?? "- [ ]",
       },
-      labels: partial.tickets?.labels ?? ["specbot-managed"],
+      labels: partial.tickets?.labels ?? ["conduit-managed"],
     },
     design: partial.design,
     ai: {
@@ -66,7 +66,7 @@ function applyDefaults(partial: Partial<SpecbotConfig>): SpecbotConfig {
     sync: {
       auto_update: partial.sync?.auto_update ?? false,
       detect_drift: partial.sync?.detect_drift ?? true,
-      state_file: partial.sync?.state_file ?? ".specbot/state.json",
+      state_file: partial.sync?.state_file ?? ".conduit/state.json",
     },
   };
 }

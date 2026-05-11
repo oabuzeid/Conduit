@@ -1,7 +1,7 @@
 import { writeFileSync, existsSync, mkdirSync } from "fs";
 import chalk from "chalk";
 
-const EXAMPLE_CONFIG = `# specbot.yaml
+const EXAMPLE_CONFIG = `# conduit.yaml
 specs:
   - "specs/**/*.md"
 
@@ -13,7 +13,7 @@ tickets:
     story: h2
     task: "- [ ]"
   labels:
-    - "specbot-managed"
+    - "conduit-managed"
 
 # design:
 #   provider: figma
@@ -26,7 +26,7 @@ ai:
 sync:
   auto_update: false
   detect_drift: true
-  state_file: ".specbot/state.json"
+  state_file: ".conduit/state.json"
 `;
 
 const EXAMPLE_SPEC = `# User Onboarding Flow
@@ -59,11 +59,11 @@ An interactive walkthrough highlighting key product features.
 `;
 
 export function runInit(): void {
-  if (existsSync("specbot.yaml")) {
-    console.log(chalk.yellow("specbot.yaml already exists — skipping."));
+  if (existsSync("conduit.yaml")) {
+    console.log(chalk.yellow("conduit.yaml already exists — skipping."));
   } else {
-    writeFileSync("specbot.yaml", EXAMPLE_CONFIG);
-    console.log(chalk.green("✓ Created specbot.yaml"));
+    writeFileSync("conduit.yaml", EXAMPLE_CONFIG);
+    console.log(chalk.green("✓ Created conduit.yaml"));
   }
 
   if (!existsSync("specs")) {
@@ -76,14 +76,14 @@ export function runInit(): void {
     console.log(chalk.green(`✓ Created ${examplePath}`));
   }
 
-  if (!existsSync(".specbot")) {
-    mkdirSync(".specbot", { recursive: true });
+  if (!existsSync(".conduit")) {
+    mkdirSync(".conduit", { recursive: true });
   }
 
   console.log("");
   console.log(chalk.bold("Next steps:"));
-  console.log("  1. Edit specbot.yaml with your Linear/Jira project key");
+  console.log("  1. Edit conduit.yaml with your Linear/Jira project key");
   console.log("  2. Set environment variables (see .env.example)");
   console.log("  3. Write your spec in specs/");
-  console.log("  4. Run: specbot generate --dry-run");
+  console.log("  4. Run: conduit generate --dry-run");
 }

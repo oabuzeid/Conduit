@@ -11,7 +11,7 @@ export async function runAudit(): Promise<void> {
   if (!config.design?.file_id) {
     console.log(
       chalk.yellow(
-        "No design file configured. Add a `design` section to specbot.yaml."
+        "No design file configured. Add a `design` section to conduit.yaml."
       )
     );
     return;

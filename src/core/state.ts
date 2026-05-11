@@ -13,21 +13,21 @@ export interface TicketMapping {
   last_synced: string;
 }
 
-export interface SpecbotState {
+export interface ConduitState {
   version: 1;
   mappings: TicketMapping[];
   last_run: string;
 }
 
-export function loadState(filepath: string): SpecbotState {
+export function loadState(filepath: string): ConduitState {
   if (!existsSync(filepath)) {
     return { version: 1, mappings: [], last_run: new Date().toISOString() };
   }
   const raw = readFileSync(filepath, "utf-8");
-  return JSON.parse(raw) as SpecbotState;
+  return JSON.parse(raw) as ConduitState;
 }
 
-export function saveState(filepath: string, state: SpecbotState): void {
+export function saveState(filepath: string, state: ConduitState): void {
   const dir = dirname(filepath);
   if (!existsSync(dir)) {
     mkdirSync(dir, { recursive: true });
@@ -40,7 +40,7 @@ export function hashContent(content: string): string {
   return createHash("sha256").update(content).digest("hex").slice(0, 12);
 }
 
-export function addMapping(state: SpecbotState, mapping: TicketMapping): void {
+export function addMapping(state: ConduitState, mapping: TicketMapping): void {
   const idx = state.mappings.findIndex(
     (m) =>
       m.spec_file === mapping.spec_file &&
@@ -55,7 +55,7 @@ export function addMapping(state: SpecbotState, mapping: TicketMapping): void {
 }
 
 export function findMappingBySection(
-  state: SpecbotState,
+  state: ConduitState,
   file: string,
   section: string
 ): TicketMapping | undefined {
@@ -65,7 +65,7 @@ export function findMappingBySection(
 }
 
 export function findMappingByTicket(
-  state: SpecbotState,
+  state: ConduitState,
   ticketId: string
 ): TicketMapping | undefined {
   return state.mappings.find((m) => m.ticket_id === ticketId);

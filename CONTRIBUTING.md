@@ -1,6 +1,6 @@
-# Contributing to specbot
+# Contributing to conduit
 
-Specbot is designed to be extended. This document describes how.
+Conduit is designed to be extended. This document describes how.
 
 ## Adding a new ticket provider
 
@@ -16,7 +16,7 @@ To add support for a new ticket system (Asana, Notion, ClickUp, etc.):
    - `ticketsToPromptContext()` — serialize tickets for the AI
 3. Register it in `src/integrations/registry.ts`. Add one line to the `providers` map.
 4. Add env vars to `.env.example` and document them in the README.
-5. Test with `specbot generate --dry-run` against your provider.
+5. Test with `conduit generate --dry-run` against your provider.
 
 The Linear and Jira providers are reference implementations.
 
@@ -34,7 +34,7 @@ To add support beyond Figma (Sketch, Adobe XD, etc.):
 
 The prompts in `src/core/ai-engine.ts` have the largest effect on output quality. If the generated tickets are not detailed enough, miss edge cases, or have formatting issues:
 
-1. Run `specbot generate --dry-run -v` to see the current output.
+1. Run `conduit generate --dry-run -v` to see the current output.
 2. Edit the prompt in the relevant function (`generateTickets`, `analyzeDrift`, `auditDesignVsSpec`).
 3. Test again and compare.
 
@@ -43,8 +43,8 @@ PRs that include before/after examples are preferred.
 ## Development setup
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/specbot.git
-cd specbot
+git clone https://github.com/YOUR_USERNAME/conduit.git
+cd conduit
 npm install
 cp .env.example .env   # fill in your API keys
 npm run build           # compile TypeScript

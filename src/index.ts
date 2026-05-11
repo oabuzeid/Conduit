@@ -12,7 +12,7 @@ dotenv.config();
 const program = new Command();
 
 program
-  .name("specbot")
+  .name("conduit")
   .description(
     "Keep your specs, tickets, and designs in sync. AI-powered ticket generation and drift detection for product managers."
   )
@@ -20,7 +20,7 @@ program
 
 program
   .command("init")
-  .description("Initialize specbot in the current repo")
+  .description("Initialize conduit in the current repo")
   .action(() => {
     runInit();
   });

@@ -1,14 +1,14 @@
-# CLAUDE.md — Specbot
+# CLAUDE.md — Conduit
 
 ## What this is
 
-Specbot is a spec-arbitrated, agent-directed sync engine for product teams. When specs, tickets, and designs fall out of sync, every change is routed through the spec as a merge point. An LLM agent decides how to route each change: open a PR now, batch with related changes, ask the PM, or pause for loop detection.
+Conduit is a spec-arbitrated, agent-directed sync engine for product teams. When specs, tickets, and designs fall out of sync, every change is routed through the spec as a merge point. An LLM agent decides how to route each change: open a PR now, batch with related changes, ask the PM, or pause for loop detection.
 
-Over time, specbot logs how teams edit its outputs, identifies patterns, and proposes prompt updates that pass an eval harness before shipping.
+Over time, conduit logs how teams edit its outputs, identifies patterns, and proposes prompt updates that pass an eval harness before shipping.
 
 ## Why this exists when Claude + MCP can do similar things
 
-A Claude conversation with Linear and Figma MCPs can do most of what `specbot generate` does. It cannot:
+A Claude conversation with Linear and Figma MCPs can do most of what `conduit generate` does. It cannot:
 
 - Run continuously without human prompting
 - Open PRs as a webhook side-effect
@@ -37,7 +37,7 @@ src/
     config.ts                 — YAML config loader
     spec-parser.ts            — markdown → structured sections
     ai-engine.ts              — Claude API (generate, drift, audit)
-    state.ts                  — .specbot/state.json mapping with content hashes
+    state.ts                  — .conduit/state.json mapping with content hashes
   integrations/
     types.ts                  — TicketProvider interface
     registry.ts               — provider name → implementation
@@ -47,7 +47,7 @@ src/
 specs/
   vehicle-photo-quality.md    — sample spec for testing
 .github/workflows/
-  specbot-sync.yml            — auto-sync on PR
+  conduit-sync.yml            — auto-sync on PR
 ```
 
 ## Commands
@@ -74,7 +74,7 @@ See ROADMAP.md for the full version. Build order summary:
 1. Reverse-direction analyzer (`src/core/reverse-analyzer.ts`)
 2. Spec PR generator (`src/core/spec-pr.ts`) using Octokit
 3. Investigation agent (`src/core/agent.ts`) — LLM directs control flow
-4. Webhook listener service (`src/server/`) — `specbot serve --port 3000`
+4. Webhook listener service (`src/server/`) — `conduit serve --port 3000`
 5. Merge-propagation — listen for spec PR merges, run downstream sync
 6. Loop prevention — hash-based change attribution
 7. PRD ambiguity scanner — pre-generation step

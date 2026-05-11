@@ -1,5 +1,5 @@
 /**
- * Figma integration for Specbot.
+ * Figma integration for Conduit.
  *
  * Reads the Figma file tree (for audit) and posts comments on
  * specific frames or the file root when specs change.
@@ -162,7 +162,7 @@ export async function postSpecChangeComments(
 
   for (const change of changes) {
     const frames = findFramesByName(nodes, change.sectionTitle);
-    const message = `📋 Spec updated: ${change.sectionTitle}\n\n${change.summary}\n\n— Posted by specbot`;
+    const message = `📋 Spec updated: ${change.sectionTitle}\n\n${change.summary}\n\n— Posted by conduit`;
 
     if (frames.length > 0) {
       // Comment on the first matching frame

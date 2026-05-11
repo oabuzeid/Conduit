@@ -2,14 +2,14 @@ specs:
   - "specs/**/*.md"
 
 tickets:
-  provider: linear
-  project: "ENG"
+  provider: jira
+  project: "SCRUM"
   mapping:
     epic: h1
     story: h2
     task: "- [ ]"
   labels:
-    - "specbot-managed"
+    - "conduit-managed"
 
 ai:
   model: "claude-sonnet-4-6"
@@ -18,4 +18,4 @@ ai:
 sync:
   auto_update: false
   detect_drift: true
-  state_file: ".specbot/state.json"
+  state_file: ".conduit/state.json"

@@ -15,7 +15,7 @@ export async function runSync(): Promise<void> {
   const specContext = specsToPromptContext(specs);
 
   // 2. Load existing tickets via provider
-  const managedLabel = config.tickets.labels[0] ?? "specbot-managed";
+  const managedLabel = config.tickets.labels[0] ?? "conduit-managed";
   const tickets = await provider.getTicketsByLabel(
     config.tickets.project,
     managedLabel
@@ -23,7 +23,7 @@ export async function runSync(): Promise<void> {
 
   if (tickets.length === 0) {
     spinner.info(
-      "No specbot-managed tickets found. Run `specbot generate` first."
+      "No conduit-managed tickets found. Run `conduit generate` first."
     );
     return;
   }

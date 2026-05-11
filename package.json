@@ -1,11 +1,11 @@
 {
-  "name": "specbot",
+  "name": "conduit",
   "version": "0.1.0",
   "description": "Keep your specs, tickets, and designs in sync. A CLI that uses AI to bridge the gap between product docs and engineering tickets.",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "specbot": "dist/index.js"
+    "conduit": "dist/index.js"
   },
   "scripts": {
     "build": "tsc",

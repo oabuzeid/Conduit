@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import type { SpecbotConfig } from "./config.js";
+import type { ConduitConfig } from "./config.js";
 
 export interface GeneratedTicket {
   type: "epic" | "story" | "task";
@@ -34,7 +34,7 @@ const client = new Anthropic();
 
 export async function generateTickets(
   specContext: string,
-  config: SpecbotConfig
+  config: ConduitConfig
 ): Promise<GeneratedTicket[]> {
   const detailInstructions: Record<string, string> = {
     minimal: "Keep descriptions brief (2-3 sentences). List 2-3 acceptance criteria per story.",
@@ -87,7 +87,7 @@ ${specContext}`,
 export async function analyzeDrift(
   specContext: string,
   ticketData: string,
-  config: SpecbotConfig
+  config: ConduitConfig
 ): Promise<SyncDiff[]> {
   const response = await client.messages.create({
     model: config.ai.model,
@@ -131,7 +131,7 @@ ${ticketData}`,
 export async function auditDesignVsSpec(
   specContext: string,
   designDescription: string,
-  config: SpecbotConfig
+  config: ConduitConfig
 ): Promise<AuditFinding[]> {
   const response = await client.messages.create({
     model: config.ai.model,
