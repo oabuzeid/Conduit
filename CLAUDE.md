@@ -8,7 +8,7 @@ Over time, Conduit logs how teams edit its outputs, identifies patterns, and pro
 
 ## Why this exists when Claude + MCP can do similar things
 
-A Claude conversation with Linear and Figma MCPs can do most of what `conduit generate` does. It cannot:
+A Claude conversation with Linear/Jira and Figma MCPs can do most of what `conduit generate` does. It cannot:
 
 - Run continuously without human prompting
 - Open PRs as a webhook side-effect
@@ -17,11 +17,7 @@ A Claude conversation with Linear and Figma MCPs can do most of what `conduit ge
 - Log interactions and learn from edits over time
 - Be installed by other teams without prompting expertise
 
-v0.1's USP is weak (Claude can do it directly). v0.2 onward is where Conduit becomes meaningfully different.
-
-## What this becomes that Linear or Jira won't build
-
-Linear and Jira will ship AI ticket generation within a year. They won't ship a tool that operates between their product, the design tool, the spec repo, and Slack. The cross-tool agent is the part that can't be commoditized.
+v0.1's USP is foundational (Claude can still do it directly). v0.2 onward is where Conduit becomes meaningfully different.
 
 ## Structure
 
@@ -69,7 +65,7 @@ ANTHROPIC_API_KEY (required), LINEAR_API_KEY (Linear), JIRA_HOST + JIRA_EMAIL + 
 
 See ROADMAP.md for the full version. Build order summary below.
 
-The phases are organized around audience. v0.1 through v0.2 are engine work for developers. v0.3 is the first phase a real PM will use. v0.4 adds learning on top of v0.3's usage data. v0.5 adds more user surfaces.
+The phases are organized around audience. v0.1 through v0.2 are engine work for developers. v0.3 is the first phase a real product team can use. v0.4 adds learning on top of v0.3's usage data. v0.5 adds more user surfaces.
 
 ### v0.1.x — Engine UX improvements (next, small release)
 
