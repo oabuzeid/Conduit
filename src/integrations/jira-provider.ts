@@ -119,6 +119,7 @@ export class JiraProvider implements TicketProvider {
     label: string
   ): Promise<TicketItem[]> {
     const jql = `project = "${projectKey}" AND labels = "${label}" ORDER BY updated DESC`;
+    const fields = "summary,description,status,labels,parent,updated";
     const data = await jiraFetch<{
       issues: {
         id: string;
@@ -132,7 +133,9 @@ export class JiraProvider implements TicketProvider {
           updated: string;
         };
       }[];
-    }>(`/search?jql=${encodeURIComponent(jql)}&maxResults=100`);
+    }>(
+      `/search/jql?jql=${encodeURIComponent(jql)}&fields=${fields}&maxResults=100`
+    );
 
     return data.issues.map((issue) => ({
       id: issue.id,
