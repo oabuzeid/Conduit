@@ -59,7 +59,7 @@ This shifts the host from data-entry to review-and-confirm, which is faster for 
 
 - Mileage incidental only. Non-mileage incidental types (refueling, on-trip recharging, post-trip recharging, tolls, tickets) remain fully self-reported in this phase and appear alongside mileage on the existing multi-incidental review screen.
 - Backend pre-calculates excess mileage from mileage collection data and the trip's mileage limit.
-- The mileage rate is $2 per extra mile. The rate is stored per trip (not hard-coded) so future trips can carry different rates without a code change.
+- The mileage rate is a fixed $2 per extra mile, applied uniformly across all trips. Hosts cannot edit the rate — they only review and optionally adjust the excess mileage value.
 - If excess is detected, the host sees a pre-filled excess mileage value and pre-calculated charge in the incidental flow.
 - Host can review, edit, or skip charging.
 - Before the invoice is sent, the host completes a pre-send attestation confirming the charges are accurate. The submission is dispatched only after explicit confirmation.
