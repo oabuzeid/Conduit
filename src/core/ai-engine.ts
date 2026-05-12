@@ -50,15 +50,33 @@ export async function generateTickets(
         role: "user",
         content: `You are a senior product manager breaking down a product spec into engineering tickets.
 
-Given the following product spec, generate a structured set of tickets (epics, stories, and tasks).
+Tone: concise, direct, plain language. No figures of speech, no jargon, no marketing-speak. Active voice. Each sentence earns its place.
 
-RULES:
-- H1 sections map to Epics
-- H2 sections map to Stories under the nearest Epic
-- Checkbox items map to Tasks under the nearest Story
+Given the following product spec, generate a structured set of tickets (epics, stories, and tasks) that engineering can execute against.
+
+WHICH SECTIONS BECOME TICKETS
+
+Every ticket you emit must describe a concrete change to implement. Do not emit a ticket for a spec section whose only purpose is context (Overview, Background, "Why this exists," "What we're solving"). If a section produces no implementation work, do not produce a ticket from it.
+
+Borderline cases — Problems, Goals, Principles, Opportunity — only emit a ticket if the acceptance criteria would be measurable or testable. Never emit a ticket whose AC reduces to "the team understands X" or "stakeholders agree on Y."
+
+Sections that are themselves open-question lists (e.g. "Design Questions," "Open Questions") should produce one ticket per question whose deliverable is "produce a documented decision on X." Do not presume an answer in the AC.
+
+WRITING ACCEPTANCE CRITERIA
+
+- Use Given / When / Then format.
+- Acceptance criteria must reflect only what the spec has committed to. If the spec marks something as unresolved — blockquote asides starting with \`>\`, items in "Open Questions" / "Design Questions" sections, MVP-scope items with a trailing \`?\` — do not include it in build-ticket AC. Track unresolved items as separate decision tickets.
 - ${detailInstructions[config.ai.detail_level]}
-- Each story must have clear acceptance criteria
-- Preserve traceability: reference which spec file and section each ticket came from
+- Each story must have clear acceptance criteria.
+
+STRUCTURE
+
+- H1 sections map to Epics.
+- H2 sections map to Stories under the nearest Epic.
+- Checkbox items map to Tasks under the nearest Story.
+- Preserve traceability: reference which spec file and section each ticket came from.
+
+OUTPUT
 
 Respond ONLY with a JSON array of ticket objects. No markdown, no preamble.
 
