@@ -2,6 +2,18 @@ import { readFileSync, existsSync } from "fs";
 import { parse as parseYaml } from "yaml";
 import { resolve } from "path";
 
+export interface AcFormat {
+  format: "given_when_then" | "bullets" | "numbered";
+  include_background: boolean;
+  include_figma_links: boolean;
+}
+
+export const DEFAULT_AC_FORMAT: AcFormat = {
+  format: "given_when_then",
+  include_background: false,
+  include_figma_links: false,
+};
+
 export interface FigmaChangeThreshold {
   min_frames_added: number;
   min_frames_removed: number;
@@ -35,7 +47,7 @@ export interface ConduitConfig {
   };
   ai: {
     model: string;
-    detail_level: "minimal" | "standard" | "thorough";
+    ac_format: AcFormat;
   };
   sync: {
     auto_update: boolean;
@@ -84,7 +96,10 @@ function applyDefaults(partial: Partial<ConduitConfig>): ConduitConfig {
       : undefined,
     ai: {
       model: partial.ai?.model ?? "claude-sonnet-4-20250514",
-      detail_level: partial.ai?.detail_level ?? "standard",
+      ac_format: {
+        ...DEFAULT_AC_FORMAT,
+        ...(partial.ai?.ac_format ?? {}),
+      },
     },
     sync: {
       auto_update: partial.sync?.auto_update ?? false,

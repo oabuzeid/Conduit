@@ -36,11 +36,28 @@ export async function generateTickets(
   specContext: string,
   config: ConduitConfig
 ): Promise<GeneratedTicket[]> {
-  const detailInstructions: Record<string, string> = {
-    minimal: "Keep descriptions brief (2-3 sentences). List 2-3 acceptance criteria per story.",
-    standard: "Write clear descriptions (1 paragraph). List 3-5 acceptance criteria per story in Given/When/Then format.",
-    thorough: "Write detailed descriptions with context and rationale. List 5-8 acceptance criteria per story in Given/When/Then format. Include edge cases.",
+  const ac = config.ai.ac_format;
+  const formatInstruction: Record<typeof ac.format, string> = {
+    given_when_then:
+      'Each acceptance criterion follows "Given <state>, when <action>, then <observable outcome>." Each AC tests one discrete behavior.',
+    bullets:
+      "Each acceptance criterion is a short, testable statement (one observable behavior per bullet). No Given/When/Then framing.",
+    numbered:
+      "Acceptance criteria are an ordered list. Earlier items are prerequisites for later ones. Each item describes one observable behavior.",
   };
+  const acInstructions = [
+    formatInstruction[ac.format],
+    "Use as many acceptance criteria as the work requires — one per discrete behavior or constraint. Do not pad.",
+    ac.include_background
+      ? "Acceptance criteria may include brief story-context phrasing (e.g. 'Given a host has completed check-in...')."
+      : "Acceptance criteria stay tight — assume the story context is already understood from the title and description. Do not restate it.",
+    ac.include_figma_links
+      ? "When a story or task maps to a specific Figma frame, reference the frame name in the description or AC where it clarifies the work."
+      : "",
+  ]
+    .filter(Boolean)
+    .map((line) => `- ${line}`)
+    .join("\n");
 
   const response = await client.messages.create({
     model: config.ai.model,
@@ -64,10 +81,9 @@ Sections that are themselves open-question lists (e.g. "Design Questions," "Open
 
 WRITING ACCEPTANCE CRITERIA
 
-- Use Given / When / Then format.
 - Acceptance criteria must reflect only what the spec has committed to. If the spec marks something as unresolved — blockquote asides starting with \`>\`, items in "Open Questions" / "Design Questions" sections, MVP-scope items with a trailing \`?\` — do not include it in build-ticket AC. Track unresolved items as separate decision tickets.
-- ${detailInstructions[config.ai.detail_level]}
 - Each story must have clear acceptance criteria.
+${acInstructions}
 
 STRUCTURE
 

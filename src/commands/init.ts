@@ -26,7 +26,10 @@ tickets:
 
 ai:
   model: "claude-sonnet-4-20250514"
-  detail_level: "standard"  # minimal | standard | thorough
+  ac_format:
+    format: "given_when_then"   # given_when_then | bullets | numbered
+    include_background: false   # if true, AC may restate story context (e.g. "Given a host has completed check-in...")
+    include_figma_links: false  # if true, AC references Figma frame names when relevant (forward-looking; generate ingests Figma in v0.2)
 
 sync:
   auto_update: false

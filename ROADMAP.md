@@ -59,7 +59,7 @@ Goal: Address known gaps in v0.1's flexibility before adding agentic logic on to
 
 1. **Configurable ticket breakdown** — `conduit.yaml` accepts a `breakdown` option: `by_section` (current), `by_layer` (backend/frontend split), `by_component`, or `custom` (user provides a prompt fragment). This becomes the action space the v0.2 agent can operate within.
 
-2. **Project-level acceptance criteria format** — replace the current `detail_level` field with an `ac_format` object: `include_background`, `include_figma_links`, `format` (bullets, GWT, numbered), `max_count`. Configured once per project, not per ticket.
+2. ✅ **Project-level acceptance criteria format** — replaced `detail_level` with an `ac_format` object: `format` (`given_when_then` | `bullets` | `numbered`), `include_background` (whether AC may restate story context), `include_figma_links` (forward-looking; takes effect once `generate` ingests Figma in v0.2). Configured once per project, not per ticket. No `max_count` knob — AC count falls out of the work; the tone rule from #3 prevents padding.
 
 3. ✅ **Default tone and ticket-writing rules in AI engine prompts** — opinionated tone (concise, direct, no figures of speech, no jargon, active voice) hard-coded in `generateTickets`. The three ticket-writing rules from CLAUDE.md are also encoded in the prompt: every ticket describes implementation work (no Overview/Background/context tickets); open-question sections produce decision tickets, not build tickets that presume answers; AC excludes anything the spec marks as unresolved (blockquote asides, items in Open/Design Questions sections, MVP-scope items with `?`). v0.3 will expose tone as a user-facing setting in Slack.
 
