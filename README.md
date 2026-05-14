@@ -33,13 +33,20 @@ These commands are the basis for v0.2. v0.2 adds the webhook listener service th
 
 ## Quick start
 
-```bash
-npm install -g conduit
-cd your-project
-conduit init
+Conduit is not yet on npm. Install from source:
 
+```bash
+git clone https://github.com/oabuzeid/Conduit.git
+cd Conduit
+npm install && npm run build
+npm link                              # makes the `conduit` command available
+
+cd /path/to/your-project
+conduit init                          # scaffolds conduit.yaml + specs/
+
+# Configure secrets — copy .env.example to .env and fill in values, or export directly
 export ANTHROPIC_API_KEY="sk-ant-..."
-export LINEAR_API_KEY="lin_api_..."   # or JIRA_* vars
+export LINEAR_API_KEY="lin_api_..."   # or JIRA_HOST / JIRA_EMAIL / JIRA_API_TOKEN
 
 conduit generate --dry-run -v
 conduit generate
@@ -63,12 +70,17 @@ design:                   # optional
 
 ai:
   model: "claude-sonnet-4-20250514"
-  detail_level: "standard"   # minimal | standard | thorough
+  breakdown:
+    mode: "by_section"            # by_section | by_layer | by_component | custom
+  ac_format:
+    format: "given_when_then"     # given_when_then | bullets | numbered
+    include_background: false     # if true, AC may restate story context
+    include_figma_links: false    # forward-looking; takes effect once generate ingests Figma in v0.2
 ```
 
 ## How v0.1 works
 
-Spec as source of truth. H1 is an epic, H2 is a story, checkboxes are tasks.
+Spec as source of truth. H1 sections map to Epics. How H2 sections become Stories depends on `ai.breakdown.mode` — by spec section, by execution layer, by component, or by a custom rule you supply. Stories are the atomic unit; engineers split work into tasks themselves. Checkbox items in the spec fold into the parent story's acceptance criteria where they imply testable behavior.
 
 Pluggable providers. Linear and Jira are built in. To add a new provider, implement one interface and register it.
 
