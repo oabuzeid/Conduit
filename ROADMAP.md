@@ -41,7 +41,7 @@ Audience: developer building or forking the project.
 
 Goal: A working CLI that generates tickets from a spec and detects drift. Validates the AI quality and integration layer before adding agentic logic.
 
-Built:
+Components:
 - Spec parser (markdown → structured sections)
 - AI ticket generation
 - Pluggable `TicketProvider` interface (Linear, Jira)
@@ -57,13 +57,15 @@ Audience: developer.
 
 Goal: Address known gaps in v0.1's flexibility before adding agentic logic on top. These changes establish the configuration surface that v0.2's agent will operate over.
 
-1. ✅ **Configurable ticket breakdown** — `conduit.yaml` accepts an `ai.breakdown` block with `mode` set to one of `by_section` (current — H2 sections become stories), `by_layer` (group stories by execution layer: backend, frontend, design, etc), `by_component` (group by UI/system component), or `custom` (user supplies `custom_instructions` describing the grouping rule). Custom mode without `custom_instructions` throws a clear config error at load time. Stories are the atomic unit — `generate` no longer emits subtasks, and the `task` type was removed from `GeneratedTicket`, `CreateTicketInput`, and the Jira/Linear providers. Engineers split stories into tasks themselves.
+Components:
 
-2. ✅ **Project-level acceptance criteria format** — replaced `detail_level` with an `ac_format` object: `format` (`given_when_then` | `bullets` | `numbered`), `include_background` (whether AC may restate story context), `include_figma_links` (forward-looking; takes effect once `generate` ingests Figma in v0.2). Configured once per project, not per ticket. No `max_count` knob — AC count falls out of the work; the tone rule from #3 prevents padding.
+1. **Configurable ticket breakdown** — Choose how conduit organizes generated tickets per project. `by_section` mirrors the spec's heading structure (the original behavior). `by_layer` groups stories by execution layer — backend, frontend, design — so each layer's work lives in its own ticket. `by_component` groups by UI or system component, bundling backend + frontend + design work per component into a single story. `custom` lets you describe the grouping rule in your own words. Set under `ai.breakdown.mode` in conduit.yaml. Stories are the atomic unit; engineers decide how to split a story into tasks themselves.
 
-3. ✅ **Default tone and ticket-writing rules in AI engine prompts** — opinionated tone (concise, direct, no figures of speech, no jargon, active voice) hard-coded in `generateTickets`. The three ticket-writing rules from CLAUDE.md are also encoded in the prompt: every ticket describes implementation work (no Overview/Background/context tickets); open-question sections produce decision tickets, not build tickets that presume answers; AC excludes anything the spec marks as unresolved (blockquote asides, items in Open/Design Questions sections, MVP-scope items with `?`). v0.3 will expose tone as a user-facing setting in Slack.
+2. **Project-level acceptance criteria format** — Decide once per project how acceptance criteria should be written, instead of re-specifying it in every spec. Pick the format (Given/When/Then, plain bullets, or numbered list), choose whether AC may restate story context, and choose whether AC reference Figma frame names. Set under `ai.ac_format` in conduit.yaml.
 
-4. ✅ **Per-project significant-change threshold for Figma** — `conduit.yaml` accepts a `design.significant_change_threshold` block with four fields: `min_frames_added` (default 1), `min_frames_removed` (default 1), `min_text_chars_changed` (default 50, roughly one CTA), and `track_top_level_only` (default true — ignore changes inside nested components). Defined in `src/core/config.ts` as `FigmaChangeThreshold` with `DEFAULT_FIGMA_THRESHOLD`; partial overrides supported. Consumed by v0.2's design-side change classifier.
+3. **Default tone and ticket-writing rules baked into the AI prompt** — Tickets come out concise and consistent without prompt-tuning each run. The prompt now enforces: every ticket describes real implementation work (no "overview" or "background" tickets that just restate the PRD); spec sections that are explicit lists of open questions ("Design Questions," "Open Questions") become one "decide and document this" ticket per question, rather than build tickets that guess at answers; and acceptance criteria exclude anything the spec marks as unresolved. This removes most of the manual cleanup the first generation run typically required.
+
+4. **Per-project significant-change threshold for Figma** — Define what counts as a Figma change worth surfacing — minimum frames added, minimum frames removed, minimum characters of text changed, and whether to ignore changes inside nested components. Set under `design.significant_change_threshold` in conduit.yaml. Consumed by v0.2's design-side classifier, so day-to-day design tweaks don't trigger alerts.
 
 ### v0.2 — Agentic engine + capture layer
 
@@ -71,7 +73,7 @@ Audience: developer.
 
 Goal: Make the LLM the orchestrator. Log every interaction so v0.4's learning loop has data to work with.
 
-Build order:
+Components:
 
 1. **Reverse-direction analyzer** (`src/core/reverse-analyzer.ts`) — given a ticket and its mapped spec section, produce a markdown diff describing how they've diverged.
 

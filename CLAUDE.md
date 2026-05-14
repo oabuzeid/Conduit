@@ -147,6 +147,25 @@ These apply to any ticket conduit generates or updates, regardless of project. T
 - **Ignore open questions when writing AC.** Anything the spec flags as unresolved — blockquote asides marked with `>`, items in "Open Questions" or "Design Questions" sections, MVP-scope items marked with `?` — must not appear in build-ticket AC. Track open questions in their own decision-style tickets whose deliverable is "produce a documented decision on X."
 - **Don't invent product behavior to reconcile design/spec mismatches.** When a design shows different values, states, or copy than the spec, flag the discrepancy and ask which is authoritative. Do not introduce a feature (e.g. "the rate is per-trip configurable") to make both sides true. Spec wins by default; designs are usually the moving artifact.
 
+## Documentation rules
+
+### ROADMAP.md scope
+
+ROADMAP.md describes what each version delivers for someone using conduit. It is not a changelog or implementation log.
+
+Each item should:
+- Name the feature in plain language
+- Describe what it accomplishes from the end-user's perspective in a few short sentences — engineering jargon is fine if it reads like English, not commit-speak
+- Mention where it lives if useful (config block, file, command) as a quick reference, not a catalog
+
+Do not include:
+- Implementation receipts (type signatures, default values, what-was-replaced-with-what)
+- Justifications for design decisions — those belong in commits or PR descriptions
+- "Why we did it this way" narrative beyond the version's one-line goal
+- Back-references to fixes ("fixes the issue from v0.1.x")
+
+The ✅ marker on a heading or item is enough to signal completion. No implementation narrative alongside.
+
 ## Conventions
 
 - ESM with .js import extensions
