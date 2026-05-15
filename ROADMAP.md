@@ -171,8 +171,8 @@ Goal: Make Conduit accessible in more places.
 
 The thesis (spec as merge point, agent-directed routing, learning loop) is general. The implementation choices (Linear, Jira, Figma, markdown, SQLite, Slack) are specific. Teams will want different combinations:
 
-- A startup might want Notion specs, Linear tickets, Claude designs
-- An enterprise might need Confluence, Jira, Figma
-- A solo founder might want markdown specs and Linear only
+- A startup might want Notion specs, Linear tickets, Figma designs
+- A team on Atlassian stack might need Confluence specs and Jira tickets
+- A solo founder might want HTML specs and Linear only
 
 The pluggable provider interface (`src/integrations/types.ts`) makes adding a new system a one-hour job. Same pattern extends to spec sources, design tools, and decision sources.
