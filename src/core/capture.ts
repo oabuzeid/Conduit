@@ -8,7 +8,8 @@ export type JobKind =
   | "audit_design"
   | "classify_design_change"
   | "analyze_reverse_diff"
-  | "agent_decision";
+  | "agent_decision"
+  | "draft_spec_edit";
 
 export interface JobRecord {
   id: string;
