@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { Breakdown, ConduitConfig } from "./config.js";
+import { captured } from "./capture.js";
 
 export interface GeneratedTicket {
   type: "epic" | "story";
@@ -60,13 +61,7 @@ export async function generateTickets(
     .map((line) => `- ${line}`)
     .join("\n");
 
-  const response = await client.messages.create({
-    model: config.ai.model,
-    max_tokens: 8192,
-    messages: [
-      {
-        role: "user",
-        content: `You are a senior product manager breaking down a product spec into engineering tickets.
+  const prompt = `You are a senior product manager breaking down a product spec into engineering tickets.
 
 Tone: concise, direct, plain language. No figures of speech, no jargon, no marketing-speak. Active voice. Each sentence earns its place.
 
@@ -109,14 +104,23 @@ Each ticket object:
 }
 
 SPEC:
-${specContext}`,
-      },
-    ],
-  });
+${specContext}`;
 
-  const text = response.content[0].type === "text" ? response.content[0].text : "";
-  const cleaned = text.replace(/```json|```/g, "").trim();
-  return JSON.parse(cleaned) as GeneratedTicket[];
+  return captured(
+    "generate_tickets",
+    { prompt, spec_chars: specContext.length },
+    { model: config.ai.model, breakdown_mode: config.ai.breakdown.mode, ac_format: config.ai.ac_format.format },
+    async () => {
+      const response = await client.messages.create({
+        model: config.ai.model,
+        max_tokens: 8192,
+        messages: [{ role: "user", content: prompt }],
+      });
+      const text = response.content[0].type === "text" ? response.content[0].text : "";
+      const cleaned = text.replace(/```json|```/g, "").trim();
+      return JSON.parse(cleaned) as GeneratedTicket[];
+    }
+  );
 }
 
 function renderBreakdownInstruction(breakdown: Breakdown): string {
@@ -137,13 +141,7 @@ export async function analyzeDrift(
   ticketData: string,
   config: ConduitConfig
 ): Promise<SyncDiff[]> {
-  const response = await client.messages.create({
-    model: config.ai.model,
-    max_tokens: 4096,
-    messages: [
-      {
-        role: "user",
-        content: `You are analyzing drift between a product spec and existing engineering tickets.
+  const prompt = `You are analyzing drift between a product spec and existing engineering tickets.
 
 Compare the spec against the current tickets and identify:
 1. Spec sections that changed but tickets weren't updated
@@ -166,14 +164,23 @@ SPEC:
 ${specContext}
 
 CURRENT TICKETS:
-${ticketData}`,
-      },
-    ],
-  });
+${ticketData}`;
 
-  const text = response.content[0].type === "text" ? response.content[0].text : "";
-  const cleaned = text.replace(/```json|```/g, "").trim();
-  return JSON.parse(cleaned) as SyncDiff[];
+  return captured(
+    "analyze_drift",
+    { prompt, spec_chars: specContext.length, ticket_chars: ticketData.length },
+    { model: config.ai.model },
+    async () => {
+      const response = await client.messages.create({
+        model: config.ai.model,
+        max_tokens: 4096,
+        messages: [{ role: "user", content: prompt }],
+      });
+      const text = response.content[0].type === "text" ? response.content[0].text : "";
+      const cleaned = text.replace(/```json|```/g, "").trim();
+      return JSON.parse(cleaned) as SyncDiff[];
+    }
+  );
 }
 
 export async function auditDesignVsSpec(
@@ -181,13 +188,7 @@ export async function auditDesignVsSpec(
   designDescription: string,
   config: ConduitConfig
 ): Promise<AuditFinding[]> {
-  const response = await client.messages.create({
-    model: config.ai.model,
-    max_tokens: 4096,
-    messages: [
-      {
-        role: "user",
-        content: `You are auditing consistency between a product spec and Figma designs.
+  const prompt = `You are auditing consistency between a product spec and Figma designs.
 
 Compare the spec against the design description and flag mismatches:
 - UI elements described in spec but missing from design
@@ -209,12 +210,21 @@ SPEC:
 ${specContext}
 
 DESIGN DESCRIPTION:
-${designDescription}`,
-      },
-    ],
-  });
+${designDescription}`;
 
-  const text = response.content[0].type === "text" ? response.content[0].text : "";
-  const cleaned = text.replace(/```json|```/g, "").trim();
-  return JSON.parse(cleaned) as AuditFinding[];
+  return captured(
+    "audit_design",
+    { prompt, spec_chars: specContext.length, design_chars: designDescription.length },
+    { model: config.ai.model },
+    async () => {
+      const response = await client.messages.create({
+        model: config.ai.model,
+        max_tokens: 4096,
+        messages: [{ role: "user", content: prompt }],
+      });
+      const text = response.content[0].type === "text" ? response.content[0].text : "";
+      const cleaned = text.replace(/```json|```/g, "").trim();
+      return JSON.parse(cleaned) as AuditFinding[];
+    }
+  );
 }
