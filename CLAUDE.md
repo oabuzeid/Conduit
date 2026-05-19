@@ -82,15 +82,20 @@ Audience: developer. No user-facing surface.
 
 1. Reverse-direction analyzer (`src/core/reverse-analyzer.ts`) — ticket diff vs. mapped spec section
 2. Spec PR generator (`src/core/spec-pr.ts`) using Octokit — PM-grade PR descriptions
-3. Investigation agent (`src/core/agent.ts`) — LLM directs control flow on webhook events
+3. Investigation agent (`src/core/agent.ts`) — LLM directs control flow on webhook events. Shares an I/O contract with #8 — design the JSON shape both sides speak before building either.
 4. Webhook listener service (`src/server/`) — Express, `/webhook/linear`, `/webhook/jira`, `/webhook/figma`. CLI: `conduit serve --port 3000`
-5. Multi-destination ticket routing — per-spec or per-section destinations
-6. Merge-propagation — listen for spec PR merges, run downstream sync
-7. Loop prevention — hash-based change attribution
-8. PRD ambiguity scanner — pre-generation step
-9. AC regression detector — flag weakened acceptance criteria
-10. Artifact capture layer — every run logged to SQLite. No learning yet, just capture. v0.4 will use this.
-11. Design-side change classifier — hybrid structural + semantic diffing for Figma webhook events. Structural pre-filter (added/removed frames, material text changes) gates a Claude classification call: `new_screen_added`, `screen_removed`, `significant_copy_change`, or `ignore`. Threshold set per project in v0.1.x. Feeds the investigation agent.
+5. Merge-propagation — listen for spec PR merges, run downstream sync
+6. Loop prevention — tag-based change attribution (simpler than hash-based; hash attribution deferred)
+7. Artifact capture layer — every run logged to a local JSON file. No learning yet, just capture. SQLite migration deferred to v0.4.
+8. Design-side change classifier — hybrid structural + semantic diffing for Figma webhook events. Structural pre-filter (added/removed frames, material text changes) gates a Claude classification call: `new_screen_added`, `screen_removed`, `significant_copy_change`, or `ignore`. Threshold set per project in v0.1.x. Feeds the investigation agent (#3). Output contract is co-designed with #3's input contract.
+
+### v0.2.x — Engine follow-ups
+
+Audience: developer.
+
+1. Multi-destination ticket routing — per-spec or per-section destinations
+2. PRD ambiguity scanner — pre-generation step
+3. AC regression detector — flag weakened acceptance criteria on external edits
 
 ### v0.3 — Slack workflow (the product launches here)
 

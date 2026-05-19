@@ -79,25 +79,35 @@ Components:
 
 2. **Spec PR generator** (`src/core/spec-pr.ts`) — apply the diff to the spec file, open a GitHub PR with PM-grade descriptions: source (which ticket, which Figma frame), what changed, what Conduit will propagate after merge. Uses Octokit.
 
-3. **Investigation agent** (`src/core/agent.ts`) — when a webhook fires, the LLM decides the action: open a PR now, batch with other recent changes, ping the PM in Slack, or pause for loop detection. This is the agentic component.
+3. **Investigation agent** (`src/core/agent.ts`) — when a webhook fires, the LLM decides the action: open a PR now, batch with other recent changes, ping the PM in Slack, or pause for loop detection. This is the agentic component. Its input contract must be designed together with #8's output contract before either is built — see note below.
 
 4. **Webhook listener service** (`src/server/`) — Express server with `/webhook/linear`, `/webhook/jira`, `/webhook/figma` endpoints. New CLI: `conduit serve --port 3000`. Deployable to Cloud Run or Fly.io.
 
-5. **Multi-destination ticket routing** — `conduit.yaml` supports per-spec or per-section ticket destinations. State model tracks destination per ticket, not per project.
+5. **Merge-propagation** — listen for `pull_request.closed` events. When a Conduit-opened PR merges, run downstream sync.
 
-6. **Merge-propagation** — listen for `pull_request.closed` events. When a Conduit-opened PR merges, run downstream sync.
+6. **Loop prevention** — tag every change Conduit makes (in the ticket label set, the PR description, and Figma comments) with a fixed marker. Skip processing webhooks for changes carrying that marker. Tag-based is simpler than full hash attribution and sufficient for v0.2; hash-based attribution can come later if needed.
 
-7. **Loop prevention** — tag every change Conduit makes with a hash. Skip processing webhooks for changes Conduit just wrote.
+7. **Artifact capture layer** — every run writes a job record to a local JSON file: full spec context, prompt sent to Claude, raw response, draft tickets, post-edit ticket state 24-48h later. No learning logic — just disciplined logging. v0.4 migrates this to SQLite when the learning loop is built.
 
-8. **PRD ambiguity scanner** — pre-generation step that flags vague verbs ("automatically," "smoothly"), undefined terms, missing edge cases, and conflicting requirements between sections.
+8. **Design-side change classifier** — hybrid structural + semantic diffing for Figma webhook events. A structural pre-filter detects added frames, removed frames, and material text changes; anything that passes the per-project threshold (set in v0.1.x) is sent to Claude for semantic classification: `new_screen_added`, `screen_removed`, `significant_copy_change`, or `ignore`. Outputs a structured change description that feeds the investigation agent (#3). Keeps Claude off the cheap-to-detect cases and reserves it for the judgment calls. Its output contract must be designed together with #3's input contract before either is built — see note below.
 
-9. **Acceptance criteria regression detector** — when a ticket is edited externally, compare new AC against the original. Flag any that were weakened or removed.
-
-10. **Artifact capture layer** — every run writes a job folder: full spec context, prompt sent to Claude, raw response, draft tickets, post-edit ticket state 24-48h later. Stored in SQLite. No learning logic — just disciplined logging. v0.4 will use this data.
-
-11. **Design-side change classifier** — hybrid structural + semantic diffing for Figma webhook events. A structural pre-filter detects added frames, removed frames, and material text changes; anything that passes the per-project threshold (set in v0.1.x) is sent to Claude for semantic classification: `new_screen_added`, `screen_removed`, `significant_copy_change`, or `ignore`. Outputs a structured change description that feeds the investigation agent (#3). Keeps Claude off the cheap-to-detect cases and reserves it for the judgment calls.
+**Design note: #3 and #8 share a contract.** The classifier's output is the agent's input. If they're designed separately, the agent will end up either over-prompting (re-classifying what the classifier already decided) or under-informed (missing the structured fields it needs to route). Before building either, sketch the JSON shape that #8 emits and #3 consumes — what fields, what enum values, what's required vs. optional. Treat the contract as the first artifact of v0.2.
 
 v0.2 stays CLI- and YAML-only. No user-facing surface.
+
+### v0.2.x — Engine follow-ups
+
+Audience: developer.
+
+Goal: Quality and configurability improvements layered on top of v0.2. Scoped after v0.2 ships so the agentic loop lands first and these don't block it.
+
+Components:
+
+1. **Multi-destination ticket routing** — `conduit.yaml` supports per-spec or per-section ticket destinations. State model tracks destination per ticket, not per project. Useful once one Conduit instance serves multiple teams.
+
+2. **PRD ambiguity scanner** — pre-generation step that flags vague verbs ("automatically," "smoothly"), undefined terms, missing edge cases, and conflicting requirements between sections. Runs before `generate` so the PM can tighten the spec first.
+
+3. **Acceptance criteria regression detector** — when a ticket is edited externally, compare new AC against the original. Flag any that were weakened or removed. Runs during `sync`.
 
 ### v0.3 — Slack workflow (the product launches here)
 

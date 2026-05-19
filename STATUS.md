@@ -30,17 +30,19 @@ These are not built yet:
 - ✅ Per-project significant-change threshold for Figma (consumed by v0.2's design-side classifier)
 
 **v0.2 — Agentic engine + capture layer:**
-- ❌ Investigation agent (LLM directs control flow on webhook receipt)
 - ❌ Reverse-direction analysis (ticket changes → spec diff)
 - ❌ Spec PR generator
+- ❌ Investigation agent (LLM directs control flow on webhook receipt) — shares I/O contract with the design-side classifier; design contract first
 - ❌ Webhook listener service
-- ❌ Multi-destination ticket routing
 - ❌ Merge-propagation
-- ❌ Loop prevention
+- ❌ Loop prevention (tag-based; hash-based attribution deferred)
+- ❌ Artifact capture layer (JSON file logging; SQLite migration deferred to v0.4)
+- ❌ Design-side change classifier (structural pre-filter + Claude semantic classification of Figma webhook events) — shares I/O contract with the investigation agent; design contract first
+
+**v0.2.x — Engine follow-ups:**
+- ❌ Multi-destination ticket routing
 - ❌ PRD ambiguity scanner
 - ❌ Acceptance criteria regression detector
-- ❌ Artifact capture layer (SQLite logs for v0.4)
-- ❌ Design-side change classifier (structural pre-filter + Claude semantic classification of Figma webhook events)
 
 **v0.3 — Slack workflow (the product launches here):**
 - ❌ Conduit Slack app
