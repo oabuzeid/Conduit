@@ -77,7 +77,7 @@ This shifts the host from data-entry to review-and-confirm, which is faster for 
 2. Backend emits one of three states for the mileage incidental:
    - **No excess** — actual ≤ limit. No mileage incidental surfaced. End.
    - **Ready for review** — actual > limit AND check-in/check-out odometer photo evidence is verifiable. The host sees a pre-filled mileage incidental with the excess miles and calculated charge, and the verifying photos are auto-attached.
-   - **Unavailable** — actual > limit BUT odometer photo evidence is missing or unverifiable. The host sees an "Unavailable" badge with copy explaining the system cannot verify, and falls back to entering the mileage manually.
+   - **Unavailable** — actual > limit BUT odometer photo evidence is missing or unverifiable. The host sees an "Unavailable" badge with the copy: "We couldn't verify the odometer photos from this trip. Enter the mileage manually below." and falls back to entering the mileage manually.
 3. Mileage is one row on the existing multi-incidental review screen, alongside other incidental types. Each row carries its own state badge.
 4. Host reviews the pre-filled value. They can: (a) accept and save, (b) edit the value before saving, or (c) skip charging (exit without saving).
 5. When the host has finished adding charges and taps Send on the Review Invoice screen, a pre-send attestation overlay appears. The host must explicitly confirm that the charges are accurate before the invoice is dispatched.
