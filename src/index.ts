@@ -1,13 +1,12 @@
 #!/usr/bin/env node
 
+import "dotenv/config";
 import { Command } from "commander";
-import dotenv from "dotenv";
 import { runGenerate } from "./commands/generate.js";
 import { runSync } from "./commands/sync.js";
 import { runAudit } from "./commands/audit.js";
 import { runInit } from "./commands/init.js";
-
-dotenv.config();
+import { startServer } from "./server/index.js";
 
 const program = new Command();
 
@@ -46,6 +45,14 @@ program
   .description("Compare Figma designs against spec files and flag mismatches")
   .action(async () => {
     await runAudit();
+  });
+
+program
+  .command("serve")
+  .description("Run the webhook listener (Jira / GitHub / Figma → agent → spec PRs)")
+  .option("-p, --port <port>", "Port to listen on", "3000")
+  .action((options) => {
+    startServer({ port: parseInt(options.port, 10) });
   });
 
 program.parse();

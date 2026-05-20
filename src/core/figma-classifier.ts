@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { diffChars } from "diff";
 import type { ConduitConfig, FigmaChangeThreshold } from "./config.js";
 import type {
   DesignChangeEvent,
@@ -79,7 +80,9 @@ export function diffSnapshots(
     const beforeText = prev.characters ?? "";
     const afterText = node.characters ?? "";
     if (beforeText === afterText) continue;
-    const charsChanged = Math.abs(afterText.length - beforeText.length) || Math.max(beforeText.length, afterText.length);
+    const charsChanged = diffChars(beforeText, afterText)
+      .filter((p) => p.added || p.removed)
+      .reduce((sum, p) => sum + (p.count ?? 0), 0);
     deltas.push({
       kind: "text_changed",
       node_id: node.id,

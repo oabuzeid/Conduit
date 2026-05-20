@@ -29,15 +29,15 @@ These are not built yet:
 - ✅ Default opinionated tone hard-coded in AI engine prompts (also encodes the three ticket-writing rules from CLAUDE.md: no context-only tickets, ignore open questions in AC, decision-style tickets for open-question sections)
 - ✅ Per-project significant-change threshold for Figma (consumed by v0.2's design-side classifier)
 
-**v0.2 — Agentic engine + capture layer:**
+**v0.2 — Agentic engine + capture layer:** ✅
 - ✅ Reverse-direction analysis (ticket changes → spec diff)
 - ✅ Spec PR generator
 - ✅ Investigation agent (LLM directs control flow on webhook receipt) — shares I/O contract with the design-side classifier
-- ❌ Webhook listener service
+- ✅ Webhook listener service (`conduit serve --port 3000`; Jira / GitHub / Figma handlers; HMAC verification optional)
 - ✅ Merge-propagation
 - ✅ Loop prevention (tag-based; hash-based attribution deferred)
 - ✅ Artifact capture layer (JSON file logging; SQLite migration deferred to v0.4)
-- ❌ Design-side change classifier (structural pre-filter + Claude semantic classification of Figma webhook events) — shares I/O contract with the investigation agent
+- ✅ Design-side change classifier (structural pre-filter + Claude semantic classification of Figma webhook events) — shares I/O contract with the investigation agent
 
 **v0.2.x — Engine follow-ups:**
 - ❌ Multi-destination ticket routing
