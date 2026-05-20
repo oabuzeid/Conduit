@@ -36,8 +36,18 @@ export async function decide(
 }
 
 function buildPrompt(input: AgentInput, context: AgentContext): string {
+  const kindHint =
+    "change_kind" in input
+      ? input.change_kind === "created"
+        ? "A NEW ticket was created. Decide whether the spec should absorb its scope. If the ticket adds clear, concrete scope the spec doesn't yet have, lean open_pr_now. If the scope is unclear, contradicts the spec, or might already live in another spec, lean ask_pm."
+        : input.change_kind === "deleted"
+          ? "A ticket was DELETED. Default to ask_pm — deletions are often migrations, accidents, or scope cuts that need PM confirmation before the spec drops the corresponding scope. Only choose open_pr_now if the deletion is clearly intentional scope removal and the spec section is purely a reflection of this ticket."
+          : "A ticket was EDITED. Diff it against the mapped spec section per the usual rules."
+      : "";
+
   return `You are the investigation agent for Conduit. A change just arrived from ${input.source}. Decide what to do.
 
+${kindHint ? `EVENT CONTEXT: ${kindHint}\n` : ""}
 ACTIONS AVAILABLE:
 - "open_pr_now": the change is concrete, well-scoped, and the spec should be updated. Provide pr_payload { target_spec_file, branch_name, edit_summary }.
 - "batch_with_pending": this change is related to other pending changes (see context). Provide batch_key — a stable string that groups related changes.

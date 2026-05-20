@@ -39,9 +39,17 @@ export interface TicketFieldDiff {
 
 export interface TicketChangeEvent {
   source: "linear" | "jira";
+  change_kind: "edited" | "created" | "deleted";
   ticket_id: string;
   ticket_title: string;
   field_diffs: TicketFieldDiff[];
+  full_snapshot?: {
+    title: string;
+    description: string;
+    acceptance_criteria?: string[];
+    labels: string[];
+    status?: string;
+  };
   mapped_spec: { file: string; section: string } | null;
   narrative_summary: string;
   detected_at: string;

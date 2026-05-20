@@ -1,6 +1,6 @@
 import { readFileSync, existsSync } from "fs";
 import type { ConduitConfig } from "../core/config.js";
-import { analyzeReverseDiff, type TicketSnapshot } from "../core/reverse-analyzer.js";
+import { analyzeReverseDiff, analyzeTicketCreation, analyzeTicketDeletion, type TicketSnapshot } from "../core/reverse-analyzer.js";
 import { decide } from "../core/agent.js";
 import { openSpecPR } from "../core/spec-pr.js";
 import { isConduitWrite, matchesRecentSelfWrite, recentSelfWrites } from "../core/loop-guard.js";
@@ -34,14 +34,22 @@ export async function handleJiraWebhook(payload: JiraWebhookPayload, config: Con
       writeFileSync(`.conduit/debug/jira-${Date.now()}.json`, JSON.stringify(payload, null, 2));
     } catch {}
   }
-  if (payload.webhookEvent !== "jira:issue_updated") {
+  const kind =
+    payload.webhookEvent === "jira:issue_updated" ? "edited" :
+    payload.webhookEvent === "jira:issue_created" ? "created" :
+    payload.webhookEvent === "jira:issue_deleted" ? "deleted" :
+    null;
+  if (!kind) {
     console.log(`[jira] ignoring event: ${payload.webhookEvent}`);
     return;
   }
   const issue = payload.issue;
-  const changelog = payload.changelog;
-  if (!issue || !changelog) {
-    console.log("[jira] no issue or changelog in payload — skipping");
+  if (!issue) {
+    console.log("[jira] no issue in payload — skipping");
+    return;
+  }
+  if (kind === "edited" && !payload.changelog) {
+    console.log(`[jira] ${issue.key}: edited event with no changelog — skipping`);
     return;
   }
 
@@ -54,7 +62,7 @@ export async function handleJiraWebhook(payload: JiraWebhookPayload, config: Con
     return;
   }
 
-  const after: TicketSnapshot = {
+  const snapshot: TicketSnapshot = {
     id: issue.key,
     title: issue.fields.summary,
     description: extractText(issue.fields.description),
@@ -62,23 +70,32 @@ export async function handleJiraWebhook(payload: JiraWebhookPayload, config: Con
     status: issue.fields.status?.name ?? "",
     acceptance_criteria: [],
   };
-  console.log(`[jira] ${issue.key}: parsed description length = ${after.description.length}`);
-
-  const before: TicketSnapshot = { ...after };
-  for (const item of changelog.items) {
-    if (item.field === "summary") before.title = item.fromString ?? "";
-    else if (item.field === "description") before.description = item.fromString ?? "";
-    else if (item.field === "status") before.status = item.fromString ?? "";
-    else if (item.field === "labels") before.labels = (item.fromString ?? "").split(/\s+/).filter(Boolean);
-  }
+  console.log(`[jira] ${issue.key} (${kind}): description length = ${snapshot.description.length}`);
 
   const mapped = lookupSpecMapping(issue.key);
-  const event = await analyzeReverseDiff(before, after, mapped, "jira", config);
-  if (!event) {
-    console.log(`[jira] ${issue.key}: no analyzable field changes — skipping`);
-    return;
+
+  let event;
+  if (kind === "edited") {
+    const before: TicketSnapshot = { ...snapshot };
+    for (const item of payload.changelog!.items) {
+      if (item.field === "summary") before.title = item.fromString ?? "";
+      else if (item.field === "description") before.description = item.fromString ?? "";
+      else if (item.field === "status") before.status = item.fromString ?? "";
+      else if (item.field === "labels") before.labels = (item.fromString ?? "").split(/\s+/).filter(Boolean);
+    }
+    event = await analyzeReverseDiff(before, snapshot, mapped, "jira", config);
+    if (!event) {
+      console.log(`[jira] ${issue.key}: no analyzable field changes — skipping`);
+      return;
+    }
+    console.log(`[jira] ${issue.key}: ${event.field_diffs.map((d) => d.field).join(", ")} changed`);
+  } else if (kind === "created") {
+    event = await analyzeTicketCreation(snapshot, mapped, "jira", config);
+    console.log(`[jira] ${issue.key}: new ticket analyzed`);
+  } else {
+    event = await analyzeTicketDeletion(snapshot, mapped, "jira", config);
+    console.log(`[jira] ${issue.key}: deletion analyzed`);
   }
-  console.log(`[jira] ${issue.key}: ${event.field_diffs.map((d) => d.field).join(", ")} changed`);
 
   const decision = await decide(event, { spec_section_content: mapped?.content, recent_self_writes: recentSelfWrites() }, config);
   console.log(`[jira] ${issue.key}: agent decision → ${decision.action}`);

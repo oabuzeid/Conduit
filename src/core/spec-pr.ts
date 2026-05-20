@@ -88,7 +88,18 @@ export async function draftSpecEdit(
   input: OpenSpecPRInput,
   config: ConduitConfig
 ): Promise<{ newContent: string; prBody: string }> {
+  const kindHint =
+    "change_kind" in input.triggering_event
+      ? input.triggering_event.change_kind === "created"
+        ? "This is a NEW TICKET being absorbed into the spec — add the relevant scope (typically as a new bullet or AC under the mapped section, or as a new subsection if the mapping is loose)."
+        : input.triggering_event.change_kind === "deleted"
+          ? "A TICKET WAS DELETED — remove the corresponding scope from the spec section. Be conservative: only remove the part that was uniquely tied to this ticket."
+          : "An EDIT — apply the smallest possible region change."
+      : "An EDIT — apply the smallest possible region change.";
+
   const prompt = `You are editing a product spec to absorb a change that came from a ticket or design tool.
+
+${kindHint}
 
 Apply the change described below to the spec. Return JSON:
 {
