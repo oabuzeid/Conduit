@@ -4,6 +4,7 @@ import { readFileSync } from "fs";
 import type { ConduitConfig } from "./config.js";
 import type { AgentDecision, TicketChangeEvent, DesignChangeEvent } from "./events.js";
 import { captured } from "./capture.js";
+import { recordPendingPR } from "./pending-prs.js";
 
 export interface SpecPRResult {
   pr_url: string;
@@ -68,6 +69,15 @@ export async function openSpecPR(input: OpenSpecPRInput, config: ConduitConfig):
     head: branch,
     base,
     body: prBody,
+  });
+
+  recordPendingPR({
+    pr_number: pr.data.number,
+    repo: { owner: input.repo.owner, name: input.repo.name },
+    triggering_event: input.triggering_event,
+    target_spec_file: input.decision.pr_payload.target_spec_file,
+    branch_name: branch,
+    opened_at: new Date().toISOString(),
   });
 
   return { pr_url: pr.data.html_url, pr_number: pr.data.number, branch_name: branch };
