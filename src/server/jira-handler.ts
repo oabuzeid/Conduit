@@ -27,6 +27,13 @@ interface JiraWebhookPayload {
 }
 
 export async function handleJiraWebhook(payload: JiraWebhookPayload, config: ConduitConfig): Promise<void> {
+  if (process.env.CONDUIT_DEBUG_WEBHOOKS === "1") {
+    try {
+      const { writeFileSync, mkdirSync, existsSync } = await import("fs");
+      if (!existsSync(".conduit/debug")) mkdirSync(".conduit/debug", { recursive: true });
+      writeFileSync(`.conduit/debug/jira-${Date.now()}.json`, JSON.stringify(payload, null, 2));
+    } catch {}
+  }
   if (payload.webhookEvent !== "jira:issue_updated") {
     console.log(`[jira] ignoring event: ${payload.webhookEvent}`);
     return;
@@ -55,6 +62,7 @@ export async function handleJiraWebhook(payload: JiraWebhookPayload, config: Con
     status: issue.fields.status?.name ?? "",
     acceptance_criteria: [],
   };
+  console.log(`[jira] ${issue.key}: parsed description length = ${after.description.length}`);
 
   const before: TicketSnapshot = { ...after };
   for (const item of changelog.items) {
@@ -128,6 +136,7 @@ function parseRepoEnv(): { owner: string; name: string } | null {
 }
 
 function extractText(adf: unknown): string {
+  if (typeof adf === "string") return adf;
   if (!adf || typeof adf !== "object") return "";
   const doc = adf as { content?: Array<{ type?: string; content?: Array<{ type?: string; text?: string; content?: unknown[] }> }> };
   if (!doc.content) return "";
