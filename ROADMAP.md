@@ -111,9 +111,9 @@ Components:
 
 ### v0.3 — Slack workflow (the product launches here)
 
-Audience: real PMs using the product for the first time.
+Audience: real PMs/designers/engineers using the product for the first time.
 
-Goal: Make Conduit usable by non-technical PMs through a conversational Slack interface. This is the phase where Conduit stops being engine work and starts being a product.
+Goal: Make Conduit usable by PMs, designers, and engineers through a conversational Slack interface. This is the phase where Conduit stops being engine work and starts being a product.
 
 Components:
 
