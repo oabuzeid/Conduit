@@ -67,7 +67,7 @@ Components:
 
 4. **Per-project significant-change threshold for Figma** — Define what counts as a Figma change worth surfacing — minimum frames added, minimum frames removed, minimum characters of text changed, and whether to ignore changes inside nested components. Set under `design.significant_change_threshold` in conduit.yaml. Consumed by v0.2's design-side classifier, so day-to-day design tweaks don't trigger alerts.
 
-### v0.2 — Agentic engine + capture layer
+### v0.2 — Agentic engine + capture layer ✅
 
 Audience: developer.
 
