@@ -8,6 +8,8 @@ import type {
 } from "./events.js";
 import type { FigmaNode } from "../integrations/figma.js";
 import { captured } from "./capture.js";
+import { mapToSpecSection } from "./spec-mapper.js";
+import { loadSpecs } from "./spec-parser.js";
 
 export interface FigmaSnapshot {
   file_id: string;
@@ -179,6 +181,20 @@ ${JSON.stringify(deltas, null, 2)}`;
     }
   );
 
+  const affected_spec_sections: Array<{ file: string; section: string }> = [];
+  if (result.classification !== "ignore") {
+    const probe = pickProbeText(deltas);
+    if (probe) {
+      try {
+        const specs = loadSpecs(config.specs);
+        const candidate = await mapToSpecSection(probe, specs, config);
+        if (candidate && candidate.confidence !== "low") {
+          affected_spec_sections.push({ file: candidate.file, section: candidate.section });
+        }
+      } catch {}
+    }
+  }
+
   return {
     source: "figma",
     file_id: fileId,
@@ -186,7 +202,20 @@ ${JSON.stringify(deltas, null, 2)}`;
     classification: result.classification,
     structural_deltas: deltas,
     semantic_summary: result.semantic_summary,
-    affected_spec_sections: [],
+    affected_spec_sections,
     detected_at: new Date().toISOString(),
   };
+}
+
+function pickProbeText(deltas: StructuralDelta[]): string | null {
+  const first = deltas.find((d) => d.frame_name && d.frame_name !== "(unknown frame)");
+  if (!first) return null;
+  const parts = [`Figma frame: ${first.frame_name}`];
+  for (const d of deltas) {
+    if (d.kind === "text_changed" && d.after) parts.push(`Text: ${d.after}`);
+    if (d.kind === "frame_added") parts.push(`New frame: ${d.frame_name}`);
+    if (d.kind === "frame_removed") parts.push(`Removed frame: ${d.frame_name}`);
+    if (parts.length > 6) break;
+  }
+  return parts.join("\n");
 }

@@ -4,6 +4,8 @@ import { analyzeReverseDiff, analyzeTicketCreation, analyzeTicketDeletion, type 
 import { decide } from "../core/agent.js";
 import { openSpecPR } from "../core/spec-pr.js";
 import { isConduitWrite, matchesRecentSelfWrite, recentSelfWrites } from "../core/loop-guard.js";
+import { mapToSpecSection } from "../core/spec-mapper.js";
+import { loadSpecs } from "../core/spec-parser.js";
 
 interface JiraChangelogItem {
   field: string;
@@ -72,7 +74,19 @@ export async function handleJiraWebhook(payload: JiraWebhookPayload, config: Con
   };
   console.log(`[jira] ${issue.key} (${kind}): description length = ${snapshot.description.length}`);
 
-  const mapped = lookupSpecMapping(issue.key);
+  let mapped = lookupSpecMapping(issue.key);
+  if (!mapped && (kind === "created" || kind === "edited")) {
+    const specs = loadSpecs(config.specs);
+    const candidate = await mapToSpecSection(
+      `${snapshot.title}\n\n${snapshot.description}`.slice(0, 4000),
+      specs,
+      config
+    );
+    if (candidate && candidate.confidence !== "low") {
+      console.log(`[jira] ${issue.key}: auto-mapped → ${candidate.file} > ${candidate.section} (${candidate.confidence})`);
+      mapped = candidate;
+    }
+  }
 
   let event;
   if (kind === "edited") {
