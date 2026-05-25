@@ -26,20 +26,21 @@ export function startServer(opts: ServerOptions): void {
     res.json({ ok: true });
   });
 
-  app.post("/webhook/jira", verifyJira, asyncRoute(async (req, res) => {
-    await handleJiraWebhook(req.body, config);
+  app.post("/webhook/jira", verifyJira, (req, res) => {
     res.status(202).json({ ok: true });
-  }));
+    handleJiraWebhook(req.body, config).catch((err) => console.error("[jira] handler error:", err));
+  });
 
-  app.post("/webhook/github", verifyGitHub, asyncRoute(async (req, res) => {
-    await handleGitHubWebhook(req.headers["x-github-event"] as string | undefined, req.body, config);
+  app.post("/webhook/github", verifyGitHub, (req, res) => {
     res.status(202).json({ ok: true });
-  }));
+    const ev = req.headers["x-github-event"] as string | undefined;
+    handleGitHubWebhook(ev, req.body, config).catch((err) => console.error("[github] handler error:", err));
+  });
 
-  app.post("/webhook/figma", asyncRoute(async (req, res) => {
-    await handleFigmaWebhook(req.body, config);
+  app.post("/webhook/figma", (req, res) => {
     res.status(202).json({ ok: true });
-  }));
+    handleFigmaWebhook(req.body, config).catch((err) => console.error("[figma] handler error:", err));
+  });
 
   app.post("/webhook/linear", (_req, res) => {
     res.status(501).json({ error: "Linear webhooks not yet implemented" });
@@ -60,12 +61,6 @@ export function startServer(opts: ServerOptions): void {
       console.warn("  WARNING: GITHUB_WEBHOOK_SECRET not set — GitHub webhook signatures will not be verified.");
     }
   });
-}
-
-function asyncRoute(fn: (req: Request, res: Response) => Promise<void>): RequestHandler {
-  return (req, res, next) => {
-    Promise.resolve(fn(req, res)).catch(next);
-  };
 }
 
 const verifyJira: RequestHandler = (req, res, next) => {
