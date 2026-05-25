@@ -30,7 +30,7 @@ These are not built yet:
 - ✅ Per-project significant-change threshold for Figma (consumed by v0.2's design-side classifier)
 
 **v0.2 — Agentic engine + capture layer:** ✅
-- ✅ Reverse-direction analysis (ticket changes → spec diff)
+- ✅ Reverse-direction analysis (ticket changes → spec diff) — covers full ticket lifecycle: edited, created, deleted
 - ✅ Spec PR generator
 - ✅ Investigation agent (LLM directs control flow on webhook receipt) — shares I/O contract with the design-side classifier
 - ✅ Webhook listener service (`conduit serve --port 3000`; Jira / GitHub / Figma handlers; HMAC verification optional)

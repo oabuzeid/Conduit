@@ -75,7 +75,7 @@ Goal: Make the LLM the orchestrator. Log every interaction so v0.4's learning lo
 
 Components:
 
-1. **Reverse-direction analyzer** (`src/core/reverse-analyzer.ts`) — given a ticket and its mapped spec section, produce a markdown diff describing how they've diverged.
+1. **Reverse-direction analyzer** (`src/core/reverse-analyzer.ts`) — given a ticket and its mapped spec section, produce a markdown diff describing how they've diverged. Handles the full ticket lifecycle: edits diff before/after, new tickets describe what scope they introduce, and deletions describe what scope is being removed — each kind feeds the agent with a different framing.
 
 2. **Spec PR generator** (`src/core/spec-pr.ts`) — apply the diff to the spec file, open a GitHub PR with PM-grade descriptions: source (which ticket, which Figma frame), what changed, what Conduit will propagate after merge. Uses Octokit.
 
