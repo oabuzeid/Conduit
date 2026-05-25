@@ -4,6 +4,7 @@ import { loadConfig } from "../core/config.js";
 import { loadSpecs, specsToPromptContext } from "../core/spec-parser.js";
 import { generateTickets, type GeneratedTicket } from "../core/ai-engine.js";
 import { loadState, saveState, addMapping, hashContent } from "../core/state.js";
+import { routeFor } from "../core/router.js";
 import { getProvider } from "../integrations/registry.js";
 import {
   getFigmaTree,
@@ -91,24 +92,50 @@ export async function runGenerate(options: GenerateOptions): Promise<void> {
   // 4. Push to ticket provider
   const pushSpinner = ora(`Pushing tickets to ${provider.name}...`).start();
   try {
-    const projectId = await provider.resolveProject(config.tickets.project);
-    const labelIds: string[] = [];
-    for (const label of config.tickets.labels) {
-      labelIds.push(await provider.ensureLabel(projectId, label));
+    // Route each epic to its destination project; stories inherit from their parent epic
+    // (Jira/Linear don't allow cross-project epic→story parent links).
+    const epicProject = new Map<string, string>();
+    for (const epic of epics) {
+      epicProject.set(epic.title, routeFor({
+        spec_file: epic.spec_ref.file,
+        section_title: epic.spec_ref.section_title,
+        ticket_labels: config.tickets.labels,
+      }, config));
+    }
+
+    // Resolve every distinct project once (id + label ids cached)
+    const projectCache = new Map<string, { projectId: string; labelIds: string[] }>();
+    const usedProjects = new Set<string>(epicProject.values());
+    for (const orphan of tickets.filter((t) => t.type === "story" && (!t.parent_title || !epicProject.has(t.parent_title)))) {
+      usedProjects.add(routeFor({
+        spec_file: orphan.spec_ref.file,
+        section_title: orphan.spec_ref.section_title,
+        ticket_labels: config.tickets.labels,
+      }, config));
+    }
+    for (const project of usedProjects) {
+      const projectId = await provider.resolveProject(project);
+      const labelIds: string[] = [];
+      for (const label of config.tickets.labels) {
+        labelIds.push(await provider.ensureLabel(projectId, label));
+      }
+      projectCache.set(project, { projectId, labelIds });
     }
 
     const state = loadState(config.sync.state_file);
-    const createdMap = new Map<string, string>(); // title -> ticket id
+    const createdMap = new Map<string, { id: string; project: string }>();
 
-    // Create epics first
+    // Create epics first, in their destination projects
     for (const ticket of tickets.filter((t) => t.type === "epic")) {
+      const project = epicProject.get(ticket.title)!;
+      const { projectId, labelIds } = projectCache.get(project)!;
       const result = await provider.createTicket(projectId, {
         title: ticket.title,
         description: formatDescription(ticket),
         labels: labelIds,
         type: ticket.type,
       });
-      createdMap.set(ticket.title, result.id);
+      createdMap.set(ticket.title, { id: result.id, project });
 
       addMapping(state, {
         spec_file: ticket.spec_ref.file,
@@ -116,16 +143,22 @@ export async function runGenerate(options: GenerateOptions): Promise<void> {
         spec_hash: hashContent(ticket.description),
         ticket_id: result.key,
         ticket_provider: config.tickets.provider,
+        ticket_project: project,
         ticket_type: "epic",
         last_synced: new Date().toISOString(),
       });
     }
 
-    // Create stories and tasks
+    // Stories: inherit parent epic's project; orphans get routed independently with no parent link
     for (const ticket of tickets.filter((t) => t.type !== "epic")) {
-      const parentId = ticket.parent_title
-        ? createdMap.get(ticket.parent_title)
-        : undefined;
+      const parentEntry = ticket.parent_title ? createdMap.get(ticket.parent_title) : undefined;
+      const project = parentEntry?.project ?? routeFor({
+        spec_file: ticket.spec_ref.file,
+        section_title: ticket.spec_ref.section_title,
+        ticket_labels: config.tickets.labels,
+      }, config);
+      const { projectId, labelIds } = projectCache.get(project)!;
+      const parentId = parentEntry?.id;
 
       const result = await provider.createTicket(projectId, {
         title: ticket.title,
@@ -134,7 +167,7 @@ export async function runGenerate(options: GenerateOptions): Promise<void> {
         labels: labelIds,
         type: ticket.type,
       });
-      createdMap.set(ticket.title, result.id);
+      createdMap.set(ticket.title, { id: result.id, project });
 
       addMapping(state, {
         spec_file: ticket.spec_ref.file,
@@ -142,6 +175,7 @@ export async function runGenerate(options: GenerateOptions): Promise<void> {
         spec_hash: hashContent(ticket.description),
         ticket_id: result.key,
         ticket_provider: config.tickets.provider,
+        ticket_project: project,
         ticket_type: ticket.type,
         parent_ticket_id: parentId,
         last_synced: new Date().toISOString(),
@@ -149,8 +183,9 @@ export async function runGenerate(options: GenerateOptions): Promise<void> {
     }
 
     saveState(config.sync.state_file, state);
+    const summary = [...usedProjects].map((p) => `${p} (${[...createdMap.values()].filter((v) => v.project === p).length})`).join(", ");
     pushSpinner.succeed(
-      `Created ${tickets.length} tickets in ${provider.name} (project: ${config.tickets.project})`
+      `Created ${tickets.length} tickets in ${provider.name}: ${summary}`
     );
   } catch (err) {
     pushSpinner.fail(`Failed to push to ${provider.name}`);

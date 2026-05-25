@@ -7,7 +7,14 @@ specs:
 
 tickets:
   provider: linear          # linear | jira
-  project: "ENG"            # Linear team key or Jira project key
+  project: "ENG"            # default project — every ticket goes here unless a route below matches
+  # routes:                 # optional — split work across projects (iOS/Android/backend, etc)
+  #   - match: { section_contains: "iOS" }
+  #     project: "IOS"
+  #   - match: { file_glob: "specs/payments/*.md" }
+  #     project: "PAY"
+  #   - match: { ticket_labels_contain: "backend" }
+  #     project: "BACK"
   mapping:
     epic: h1
     story: h2

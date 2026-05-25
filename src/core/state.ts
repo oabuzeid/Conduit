@@ -8,6 +8,7 @@ export interface TicketMapping {
   spec_hash: string;
   ticket_id: string;
   ticket_provider: string;
+  ticket_project: string;
   ticket_type: "epic" | "story";
   parent_ticket_id?: string;
   last_synced: string;

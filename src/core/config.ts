@@ -37,11 +37,23 @@ export const DEFAULT_FIGMA_THRESHOLD: FigmaChangeThreshold = {
   track_top_level_only: true,
 };
 
+export interface RouteMatch {
+  section_contains?: string;
+  file_glob?: string;
+  ticket_labels_contain?: string;
+}
+
+export interface Route {
+  match: RouteMatch;
+  project: string;
+}
+
 export interface ConduitConfig {
   specs: string[];
   tickets: {
     provider: "linear" | "jira";
     project: string;
+    routes: Route[];
     mapping: {
       epic: string;
       story: string;
@@ -99,6 +111,7 @@ function applyDefaults(partial: Partial<ConduitConfig>): ConduitConfig {
     tickets: {
       provider: partial.tickets?.provider ?? "linear",
       project: partial.tickets?.project ?? "",
+      routes: partial.tickets?.routes ?? [],
       mapping: {
         epic: partial.tickets?.mapping?.epic ?? "h1",
         story: partial.tickets?.mapping?.story ?? "h2",

@@ -103,7 +103,7 @@ Goal: Quality and configurability improvements layered on top of v0.2. Scoped af
 
 Components:
 
-1. **Multi-destination ticket routing** — `conduit.yaml` supports per-spec or per-section ticket destinations. State model tracks destination per ticket, not per project. Useful once one Conduit instance serves multiple teams.
+1. **Per-project ticket routing** — A single team usually stays on one ticket tool (Jira or Linear) but splits work across multiple projects within it: iOS in the iOS project, Android in the Android project, backend in the backend project. Conduit routes each generated ticket to the right project based on rules in `conduit.yaml` — match by spec file path, section title, or ticket label, with a default project as the catch-all. State tracks which project each ticket lives in, so reverse-direction lookups and merge-propagation comments still find their target.
 
 2. **PRD ambiguity scanner** — pre-generation step that flags vague verbs ("automatically," "smoothly"), undefined terms, missing edge cases, and conflicting requirements between sections. Runs before `generate` so the PM can tighten the spec first.
 
