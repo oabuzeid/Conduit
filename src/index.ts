@@ -6,6 +6,7 @@ import { runGenerate } from "./commands/generate.js";
 import { runSync } from "./commands/sync.js";
 import { runAudit } from "./commands/audit.js";
 import { runInit } from "./commands/init.js";
+import { runScan } from "./commands/scan.js";
 import { startServer } from "./server/index.js";
 
 const program = new Command();
@@ -45,6 +46,13 @@ program
   .description("Compare Figma designs against spec files and flag mismatches")
   .action(async () => {
     await runAudit();
+  });
+
+program
+  .command("scan")
+  .description("Scan spec files for ambiguity (vague verbs, undefined terms, missing edge cases, conflicts) before generating tickets")
+  .action(async () => {
+    await runScan();
   });
 
 program
