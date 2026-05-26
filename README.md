@@ -100,6 +100,31 @@ GitHub Action. Runs sync on PRs that touch spec files and comments the result on
 | `JIRA_EMAIL` | Jira | Atlassian email |
 | `JIRA_API_TOKEN` | Jira | Atlassian API token |
 | `FIGMA_ACCESS_TOKEN` | Figma | Figma personal access token |
+| `GITHUB_TOKEN` | GitHub | Personal access token with `repo` scope, used by the v0.2 spec-PR generator |
+| `CONDUIT_GITHUB_REPO` | GitHub | `owner/name` of the repo conduit opens spec PRs against |
+| `SLACK_BOT_TOKEN` | Slack (v0.3) | Bot User OAuth Token, starts with `xoxb-` |
+| `SLACK_SIGNING_SECRET` | Slack (v0.3) | App signing secret, used to verify incoming Slack requests |
+
+## Slack setup (v0.3)
+
+To enable the Slack workflow, create a Slack app and install it in your workspace:
+
+1. Go to https://api.slack.com/apps → **Create New App** → **From scratch** → name it `Conduit`, pick your workspace.
+2. **OAuth & Permissions** → add these Bot Token Scopes (minimal set; more added in later phases):
+   - `chat:write`
+   - `commands`
+   - `app_mentions:read`
+   - `users:read`
+3. **Slash Commands** → **Create New Command**:
+   - Command: `/conduit`
+   - Request URL: `https://<your-ngrok-url>/slack/commands`
+   - Short description: `Conduit project setup and sync`
+   - Usage hint: `[ping | help | start]`
+4. **Interactivity & Shortcuts** → toggle on, Request URL: `https://<your-ngrok-url>/slack/events`
+5. **Install to Workspace** → approve → copy the **Bot User OAuth Token** into `SLACK_BOT_TOKEN` in `.env`.
+6. **Basic Information** → copy **Signing Secret** into `SLACK_SIGNING_SECRET` in `.env`.
+
+Restart `conduit serve` — it will auto-detect the env vars and mount the Slack routes alongside the webhook listeners.
 
 ## Project plan
 

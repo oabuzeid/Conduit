@@ -4,6 +4,7 @@ import { loadConfig } from "../core/config.js";
 import { handleJiraWebhook } from "./jira-handler.js";
 import { handleGitHubWebhook } from "./github-handler.js";
 import { handleFigmaWebhook } from "./figma-handler.js";
+import { buildSlackApp } from "../slack/app.js";
 
 export interface ServerOptions {
   port: number;
@@ -11,7 +12,13 @@ export interface ServerOptions {
 
 export function startServer(opts: ServerOptions): void {
   const config = loadConfig();
-  const app = express();
+
+  // If Slack env vars are set, use bolt's ExpressReceiver as the host app.
+  // bolt installs its own body-parsing middleware on /slack/* routes
+  // (which need the raw body for signature verification), so we let it own
+  // the app construction and just bolt our webhook routes on after.
+  const slack = buildSlackApp();
+  const app = slack?.receiver.app ?? express();
 
   app.use(
     express.json({
@@ -53,12 +60,16 @@ export function startServer(opts: ServerOptions): void {
 
   app.listen(opts.port, () => {
     console.log(`Conduit listening on http://localhost:${opts.port}`);
-    console.log(`Endpoints: /webhook/jira  /webhook/github  /webhook/figma  /healthz`);
+    const slackEndpoints = slack ? "  /slack/events  /slack/commands" : "";
+    console.log(`Endpoints: /webhook/jira  /webhook/github  /webhook/figma  /healthz${slackEndpoints}`);
     if (!process.env.JIRA_WEBHOOK_SECRET) {
       console.warn("  WARNING: JIRA_WEBHOOK_SECRET not set — Jira webhook signatures will not be verified.");
     }
     if (!process.env.GITHUB_WEBHOOK_SECRET) {
       console.warn("  WARNING: GITHUB_WEBHOOK_SECRET not set — GitHub webhook signatures will not be verified.");
+    }
+    if (!slack) {
+      console.warn("  Slack disabled — set SLACK_BOT_TOKEN + SLACK_SIGNING_SECRET in .env to enable.");
     }
   });
 }
