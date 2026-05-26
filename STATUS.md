@@ -39,10 +39,12 @@ These are not built yet:
 - ✅ Artifact capture layer (JSON file logging; SQLite migration deferred to v0.4)
 - ✅ Design-side change classifier (structural pre-filter + Claude semantic classification of Figma webhook events) — shares I/O contract with the investigation agent
 
-**v0.2.x — Engine follow-ups:**
-- ❌ Multi-destination ticket routing
-- ❌ PRD ambiguity scanner
-- ❌ Acceptance criteria regression detector
+**v0.2.x — Engine follow-ups:** ✅
+- ✅ Per-project ticket routing (`routes` block in conduit.yaml; stories inherit parent epic's project)
+- ✅ PRD ambiguity scanner (`conduit scan`)
+- ✅ Acceptance criteria regression detector (runs during `conduit sync`)
+- ✅ Frame/ticket → spec section auto-mapping (closes the orphan-mapping gap surfaced during v0.2 testing)
+- ✅ Async webhook processing (handlers respond 202 in ~20ms; chain runs in background)
 
 **v0.3 — Slack workflow (the product launches here):**
 - ❌ Conduit Slack app

@@ -95,7 +95,7 @@ Components:
 
 v0.2 stays CLI- and YAML-only. No user-facing surface.
 
-### v0.2.x — Engine follow-ups
+### v0.2.x — Engine follow-ups ✅
 
 Audience: developer.
 
