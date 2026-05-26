@@ -1,8 +1,10 @@
 import chalk from "chalk";
 import ora from "ora";
+import { existsSync, readFileSync } from "fs";
 import { loadConfig } from "../core/config.js";
 import { loadSpecs, specsToPromptContext } from "../core/spec-parser.js";
 import { analyzeDrift } from "../core/ai-engine.js";
+import { detectAcRegression } from "../core/ac-regression.js";
 import { getProvider } from "../integrations/registry.js";
 
 export async function runSync(): Promise<void> {
@@ -65,4 +67,62 @@ export async function runSync(): Promise<void> {
     console.log(chalk.white(`     → ${diff.suggested_action}`));
     console.log("");
   }
+
+  // 5. AC regression check on ticket_changed diffs
+  const changedDiffs = diffs.filter((d) => d.drift_type === "ticket_changed");
+  if (changedDiffs.length === 0) return;
+
+  const stateMap = loadStateMappings(config.sync.state_file);
+  const regSpinner = ora(`Checking ${changedDiffs.length} edited ticket(s) for AC regressions...`).start();
+  const findings = [] as Awaited<ReturnType<typeof detectAcRegression>>[];
+  for (const diff of changedDiffs) {
+    const ticket = tickets.find((t) => t.id === diff.ticket_id || t.key === diff.ticket_id);
+    if (!ticket) continue;
+    const mapping = stateMap.find((m) => m.ticket_id === ticket.key);
+    if (!mapping) continue;
+    const sectionContent = findSpecSection(mapping.spec_file, mapping.spec_section);
+    if (!sectionContent) continue;
+    const finding = await detectAcRegression(
+      { id: ticket.key, title: ticket.title, current_description: ticket.description },
+      sectionContent,
+      config
+    );
+    if (finding) findings.push(finding);
+  }
+  regSpinner.succeed(`Found ${findings.length} AC regression(s)`);
+
+  if (findings.length > 0) {
+    console.log("");
+    console.log(chalk.bold("Acceptance criteria regressions:"));
+    for (const f of findings) {
+      if (!f) continue;
+      const color = f.severity === "major" ? chalk.red : chalk.yellow;
+      console.log(color(`  ⚠ [${f.severity}] ${f.ticket_id} ${f.ticket_title}`));
+      console.log(chalk.gray(`     ${f.summary}`));
+      for (const r of f.removed) console.log(chalk.gray(`     - removed: ${r}`));
+      for (const w of f.weakened) console.log(chalk.gray(`     - weakened: ${w.before} → ${w.after}  (${w.why})`));
+      console.log("");
+    }
+  }
+}
+
+interface StateMapping {
+  spec_file: string;
+  spec_section: string;
+  ticket_id: string;
+}
+
+function loadStateMappings(path: string): StateMapping[] {
+  if (!existsSync(path)) return [];
+  return (JSON.parse(readFileSync(path, "utf-8")) as { mappings: StateMapping[] }).mappings ?? [];
+}
+
+function findSpecSection(specFile: string, sectionTitle: string): string | null {
+  const candidates = ["specs/__tests/", "specs/", ""].map((d) => d + specFile);
+  const path = candidates.find((p) => existsSync(p));
+  if (!path) return null;
+  const content = readFileSync(path, "utf-8");
+  const escaped = sectionTitle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = content.match(new RegExp(`## ${escaped}\\n\\n([\\s\\S]*?)(?=\\n## |$)`));
+  return match ? match[1].trim() : null;
 }
