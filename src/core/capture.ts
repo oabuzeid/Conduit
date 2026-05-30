@@ -9,7 +9,8 @@ export type JobKind =
   | "classify_design_change"
   | "analyze_reverse_diff"
   | "agent_decision"
-  | "draft_spec_edit";
+  | "draft_spec_edit"
+  | "slack_conversation_turn";
 
 export interface JobRecord {
   id: string;

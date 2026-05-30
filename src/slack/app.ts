@@ -2,6 +2,7 @@ import { App, ExpressReceiver, type Installation, type InstallationQuery } from 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import { dirname } from "path";
 import { registerSlashCommand } from "./commands/index.js";
+import { registerAppMention } from "./events/app-mention.js";
 
 // Single-workspace installation store. Persists the bot token + team metadata
 // to .conduit/slack-installation.json. When we move to enterprise / multi-
@@ -67,6 +68,7 @@ export function buildSlackApp(): { receiver: ExpressReceiver; app: App } | null 
   });
 
   registerSlashCommand(app);
+  registerAppMention(app);
 
   return { receiver, app };
 }

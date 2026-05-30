@@ -1,12 +1,13 @@
 import type { App } from "@slack/bolt";
 import { handlePing } from "./ping.js";
 import { handleHelp } from "./help.js";
+import { handleStart } from "./start.js";
 
 export function registerSlashCommand(app: App): void {
-  app.command("/conduit", async ({ command, ack, respond }) => {
+  app.command("/conduit", async ({ command, ack, respond, client }) => {
     await ack();
     const text = (command.text ?? "").trim();
-    const [sub, ..._rest] = text.split(/\s+/);
+    const [sub, ...rest] = text.split(/\s+/);
     switch (sub) {
       case "":
       case "help":
@@ -14,6 +15,9 @@ export function registerSlashCommand(app: App): void {
         return;
       case "ping":
         await handlePing(command, respond);
+        return;
+      case "start":
+        await handleStart(command, respond, client, rest.join(" "));
         return;
       default:
         await respond({
