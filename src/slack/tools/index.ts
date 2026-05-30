@@ -6,6 +6,7 @@ import { generateTickets, type GeneratedTicket } from "../../core/ai-engine.js";
 import { routeFor } from "../../core/router.js";
 import { getProvider } from "../../integrations/registry.js";
 import { loadState, saveState, addMapping, hashContent } from "../../core/state.js";
+import { fetchSpecFromUrl } from "../../core/spec-fetcher.js";
 import type { Session } from "../session.js";
 
 export interface ToolDefinition {
@@ -21,12 +22,12 @@ export interface ToolDefinition {
 export const TOOL_DEFINITIONS: ToolDefinition[] = [
   {
     name: "ingest_spec",
-    description: "Load a product spec into the session. Accepts either pasted markdown or a relative path to a markdown file in the repo (e.g. 'specs/payments/checkout.md'). Call this once at the start of a session, or to switch specs.",
+    description: "Load a product spec into the session. Accepts pasted markdown, a relative path to a markdown file in the repo (e.g. 'specs/payments/checkout.md'), or a public Google Doc URL ('anyone with the link can view'). Call this once at the start of a session, or to switch specs.",
     input_schema: {
       type: "object",
       properties: {
-        source: { type: "string", enum: ["paste", "file_path"], description: "How the spec is being supplied" },
-        content: { type: "string", description: "The markdown content (if source='paste') or the file path (if source='file_path')" },
+        source: { type: "string", enum: ["paste", "file_path", "url"], description: "How the spec is being supplied. 'url' currently supports public Google Docs only." },
+        content: { type: "string", description: "The markdown content (paste), the file path (file_path), or the URL (url)." },
       },
       required: ["source", "content"],
     },
@@ -103,17 +104,27 @@ export async function executeTool(
   }
 }
 
-function ingestSpec(input: { source: string; content: string }, session: Session): string {
+async function ingestSpec(input: { source: string; content: string }, session: Session): Promise<string> {
   if (input.source === "file_path") {
     if (!existsSync(input.content)) return `File not found: ${input.content}`;
     session.spec_text = readFileSync(input.content, "utf-8");
     session.spec_file_path = input.content;
+  } else if (input.source === "url") {
+    try {
+      const fetched = await fetchSpecFromUrl(input.content);
+      session.spec_text = fetched.content;
+      session.spec_file_path = undefined;
+      session.attached_urls.push(`spec source: ${fetched.source_url}`);
+    } catch (err) {
+      return err instanceof Error ? err.message : String(err);
+    }
   } else {
     session.spec_text = input.content;
     session.spec_file_path = undefined;
   }
   const sectionCount = session.spec_text.split(/\n##\s/).length - 1;
-  return `Loaded spec (${session.spec_text.length} chars, ~${sectionCount} H2 sections).`;
+  const sourceLabel = input.source === "url" ? `URL (${input.content})` : input.source;
+  return `Loaded spec from ${sourceLabel} — ${session.spec_text.length} chars, ~${sectionCount} H2 sections.`;
 }
 
 async function scanSpec(session: Session, config: ConduitConfig): Promise<string> {
