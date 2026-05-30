@@ -17,9 +17,9 @@ export async function handleHelp(_command: SlashCommand, respond: RespondFn): Pr
             "• `/conduit ping` — confirm I'm alive\n" +
             "• `/conduit help` — show this menu\n\n" +
             "*Coming next:*\n" +
-            "• `/conduit start` — start a guided project setup in a thread (Phase B)\n" +
-            "• Inline ticket previews you can edit before pushing (Phase C)\n" +
-            "• Spec-PR and design-change alerts you approve or reject in Slack (Phase D)",
+            "• `@conduit` mention me in a thread with your spec, and we'll figure out the breakdown together (Phase B) — natural conversation, not a form to fill out\n" +
+            "• Inline ticket previews with Approve / Modify buttons, alongside free-text edits like \"make these more concise\" (Phase C)\n" +
+            "• Spec-PR and design-change alerts you Approve / Reject in Slack instead of GitHub (Phase D)",
         },
       },
       {
