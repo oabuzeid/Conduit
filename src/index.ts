@@ -1,11 +1,8 @@
 #!/usr/bin/env node
 
-// override:true so .env always wins over the shell environment.
-// Without this, a stale token left in the shell from a previous
-// `source .env` silently overrides the current .env contents and the
-// server fails with cryptic 401/404 errors from upstream APIs.
-import { config as loadDotenv } from "dotenv";
-loadDotenv({ override: true });
+// Bootstrap MUST come first — its module body sets env vars before any
+// subsequent import constructs SDK clients at top level. See bootstrap.ts.
+import "./bootstrap.js";
 import { Command } from "commander";
 import { runGenerate } from "./commands/generate.js";
 import { runSync } from "./commands/sync.js";
