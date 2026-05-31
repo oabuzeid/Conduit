@@ -22,6 +22,7 @@ Important workflow rules:
 - Always call ingest_spec before scan_spec, generate_tickets, or push_tickets.
 - Always call generate_tickets before update_breakdown or push_tickets.
 - Run scan_spec proactively after ingest, and surface the high-severity findings to the PM — don't just generate over ambiguity silently.
+- Before calling generate_tickets for the first time in a session, summarize the defaults you'll use (destination project, breakdown mode, AC format) in ONE message and ask the PM to confirm or override. Don't make it a multi-question wizard. If the PM says "looks good", "go", "ship it", or anything that means yes, proceed with the defaults. If they name a change ("use by_component" / "put these in IOS" / "more concise"), call the appropriate set_* tool, then generate. The config defaults are shown in the session state below.
 - Don't push tickets without explicit confirmation from the PM ("yes", "looks good", "ship it", "send it", etc.). If unsure, ask.
 - If the PM mentions a destination (project key, team name), call set_destination so it's recorded for this session.
 - If the PM asks for a tone shift ("more concise", "less formal"), call set_tone; the next generate_tickets will respect it.
@@ -68,7 +69,7 @@ export async function decideNextTurn(
         const response = await client.messages.create({
           model: config.ai.model,
           max_tokens: 4096,
-          system: SYSTEM_PROMPT.replace("{{SESSION_STATE}}", JSON.stringify(summarizeSession(session), null, 2)),
+          system: SYSTEM_PROMPT.replace("{{SESSION_STATE}}", JSON.stringify(summarizeSession(session, config), null, 2)),
           tools: TOOL_DEFINITIONS.map((t) => ({
             name: t.name,
             description: t.description,
@@ -119,7 +120,7 @@ export async function decideNextTurn(
   );
 }
 
-function summarizeSession(session: Session) {
+function summarizeSession(session: Session, config: ConduitConfig) {
   return {
     spec_loaded: !!session.spec_text,
     spec_file: session.spec_file_path,
@@ -131,5 +132,15 @@ function summarizeSession(session: Session) {
     draft_tickets: session.draft_tickets?.length ?? 0,
     pushed: !!session.pushed_ticket_ids?.length,
     status: session.status,
+    config_defaults: {
+      destination_project: config.tickets.project,
+      provider: config.tickets.provider,
+      breakdown_mode: config.ai.breakdown.mode,
+      breakdown_custom: config.ai.breakdown.mode === "custom" ? config.ai.breakdown.custom_instructions : undefined,
+      ac_format: config.ai.ac_format.format,
+      ac_includes_background: config.ai.ac_format.include_background,
+      ac_includes_figma_links: config.ai.ac_format.include_figma_links,
+      tone_default: "concise, direct, plain language",
+    },
   };
 }
