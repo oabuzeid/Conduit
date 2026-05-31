@@ -1,6 +1,11 @@
 #!/usr/bin/env node
 
-import "dotenv/config";
+// override:true so .env always wins over the shell environment.
+// Without this, a stale token left in the shell from a previous
+// `source .env` silently overrides the current .env contents and the
+// server fails with cryptic 401/404 errors from upstream APIs.
+import { config as loadDotenv } from "dotenv";
+loadDotenv({ override: true });
 import { Command } from "commander";
 import { runGenerate } from "./commands/generate.js";
 import { runSync } from "./commands/sync.js";
