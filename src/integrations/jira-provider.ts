@@ -101,6 +101,9 @@ export class JiraProvider implements TicketProvider {
     if (input.description !== undefined) {
       fields.description = toADF(input.description);
     }
+    if (input.parentKey !== undefined) {
+      fields.parent = input.parentKey ? { key: input.parentKey } : null;
+    }
 
     await jiraFetch(`/issue/${input.id}`, {
       method: "PUT",

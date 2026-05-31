@@ -83,6 +83,33 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     description: "Actually create the draft tickets in Jira/Linear. Only call after the user has explicitly approved the breakdown. Returns the created ticket IDs and URLs.",
     input_schema: { type: "object", properties: {} },
   },
+  {
+    name: "create_jira_ticket",
+    description: "Create a single ticket directly in Jira (epic or story), outside the bulk-generate flow. Use this when the PM asks to add a one-off epic or story to an already-pushed set — e.g. 'create a new epic called X to group these under.' Returns the created ticket key.",
+    input_schema: {
+      type: "object",
+      properties: {
+        title: { type: "string" },
+        description: { type: "string" },
+        type: { type: "string", enum: ["epic", "story"] },
+        project_key: { type: "string", description: "Optional. Defaults to the session destination or the conduit.yaml default." },
+        parent_key: { type: "string", description: "Optional. If creating a story, the epic key it should sit under (e.g. SCRUM-12)." },
+      },
+      required: ["title", "description", "type"],
+    },
+  },
+  {
+    name: "change_jira_parent",
+    description: "Reparent an existing Jira ticket. Use this when the PM wants to move stories under a different epic — e.g. 'move SCRUM-45 and SCRUM-46 under the new epic SCRUM-50.' Pass an empty string as new_parent_key to detach from any epic.",
+    input_schema: {
+      type: "object",
+      properties: {
+        ticket_keys: { type: "array", items: { type: "string" }, description: "List of ticket keys to reparent (e.g. ['SCRUM-45', 'SCRUM-46'])" },
+        new_parent_key: { type: "string", description: "Epic key the tickets should sit under, or empty string to detach." },
+      },
+      required: ["ticket_keys", "new_parent_key"],
+    },
+  },
 ];
 
 export async function executeTool(
@@ -100,6 +127,8 @@ export async function executeTool(
     case "generate_tickets": return generateTicketsTool(session, config);
     case "update_breakdown": return updateBreakdown(input as { edits: string }, session);
     case "push_tickets": return pushTickets(session, config);
+    case "create_jira_ticket": return createJiraTicket(input as { title: string; description: string; type: "epic" | "story"; project_key?: string; parent_key?: string }, session, config);
+    case "change_jira_parent": return changeJiraParent(input as { ticket_keys: string[]; new_parent_key: string }, config);
     default: return `Unknown tool: ${name}`;
   }
 }
@@ -282,8 +311,89 @@ async function pushTickets(session: Session, config: ConduitConfig): Promise<str
   }
   saveState(config.sync.state_file, state);
   session.pushed_ticket_ids = [...createdMap.values()].map((v) => v.key);
-  session.status = "completed";
+  // Stay "active" — the PM may want to reorganize, add follow-ups, or move
+  // tickets under a new epic in the same conversation. Use a separate close
+  // action (future) to mark a session as done.
   return `Pushed ${tickets.length} tickets to ${provider.name}:\n` + links.join("\n");
+}
+
+async function createJiraTicket(
+  input: { title: string; description: string; type: "epic" | "story"; project_key?: string; parent_key?: string },
+  session: Session,
+  config: ConduitConfig
+): Promise<string> {
+  if (config.tickets.provider !== "jira") return `create_jira_ticket only supports Jira (current provider: ${config.tickets.provider}).`;
+  const provider = getProvider("jira");
+  const project = input.project_key ?? session.destination ?? config.tickets.project;
+  const projectId = await provider.resolveProject(project);
+  const labelIds: string[] = [];
+  for (const label of config.tickets.labels) labelIds.push(await provider.ensureLabel(projectId, label));
+  let parentId: string | undefined;
+  if (input.parent_key) {
+    // Look up the parent in state.json to get its internal id; fall back to passing the key directly.
+    const state = loadState(config.sync.state_file);
+    const mapping = state.mappings.find((m) => m.ticket_id === input.parent_key);
+    parentId = mapping?.parent_ticket_id ?? undefined;
+    // Note: Jira's create endpoint accepts parent by key directly via fields.parent.key —
+    // but our provider abstraction passes parentId. For epics+stories pushed by conduit,
+    // we resolved IDs at push time; reuse them when available.
+  }
+  const result = await provider.createTicket(projectId, {
+    title: input.title,
+    description: input.description,
+    labels: labelIds,
+    type: input.type,
+    parentId,
+  });
+
+  const state = loadState(config.sync.state_file);
+  addMapping(state, {
+    spec_file: session.spec_file_path ?? "(slack session)",
+    spec_section: input.title,
+    spec_hash: hashContent(input.description),
+    ticket_id: result.key,
+    ticket_provider: "jira",
+    ticket_project: project,
+    ticket_type: input.type,
+    parent_ticket_id: parentId,
+    last_synced: new Date().toISOString(),
+  });
+  saveState(config.sync.state_file, state);
+
+  return `Created ${input.type} ${result.key} in ${project}: "${input.title}"`;
+}
+
+async function changeJiraParent(
+  input: { ticket_keys: string[]; new_parent_key: string },
+  config: ConduitConfig
+): Promise<string> {
+  if (config.tickets.provider !== "jira") return `change_jira_parent only supports Jira (current provider: ${config.tickets.provider}).`;
+  const provider = getProvider("jira");
+  const results: string[] = [];
+  const errors: string[] = [];
+  for (const key of input.ticket_keys) {
+    try {
+      await provider.updateTicket({ id: key, parentKey: input.new_parent_key });
+      results.push(key);
+    } catch (err) {
+      errors.push(`${key}: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
+  // Reflect the new parent in state.json so reverse-direction sync stays consistent.
+  const state = loadState(config.sync.state_file);
+  const newParentMapping = state.mappings.find((m) => m.ticket_id === input.new_parent_key);
+  const newParentInternalId = newParentMapping ? state.mappings.find((m) => m.ticket_id === input.new_parent_key)?.parent_ticket_id : undefined;
+  for (const key of results) {
+    const m = state.mappings.find((mm) => mm.ticket_id === key);
+    if (m) m.parent_ticket_id = input.new_parent_key ? (newParentInternalId ?? input.new_parent_key) : undefined;
+  }
+  saveState(config.sync.state_file, state);
+
+  const action = input.new_parent_key ? `reparented under ${input.new_parent_key}` : "detached from any epic";
+  const ok = results.length ? `${results.length} ticket(s) ${action}: ${results.join(", ")}.` : "";
+  const fail = errors.length ? ` Errors: ${errors.join("; ")}.` : "";
+  return (ok + fail).trim() || "No tickets specified.";
 }
 
 function synthSpec(session: Session): { file: string; sections: ReturnType<typeof parseSpec>["sections"]; raw: string } {

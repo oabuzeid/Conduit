@@ -33,6 +33,7 @@ export interface UpdateTicketInput {
   title?: string;
   description?: string;
   labels?: string[];
+  parentKey?: string; // pass to reparent (or empty string to detach)
 }
 
 export interface TicketProvider {
