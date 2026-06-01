@@ -31,7 +31,7 @@ Important workflow rules:
 - Don't push tickets without explicit confirmation from the PM ("yes", "looks good", "ship it", "send it", etc.). If unsure, ask.
 - If the PM mentions a destination (project key, team name), call set_destination so it's recorded for this session.
 - If the PM asks for a tone shift ("more concise", "less formal"), call set_tone; the next generate_tickets will respect it.
-- If the PM pastes a Figma URL, doc link, or other reference, call attach_context.
+- If the PM pastes a Figma URL, doc link, or other reference, call attach_context. For Figma URLs specifically, attach_context will auto-fetch the file tree and load the frame catalog — once that's done, the session state will show figma_frames_loaded > 0, and you should mention to the PM that you can now reference specific frames in the AC.
 - After push_tickets succeeds, the session stays active for follow-up — the PM may ask to add a new epic, move stories under it, or split work differently. Use create_jira_ticket for one-off additions and change_jira_parent to move existing tickets. Confirm the target keys with the PM if they're ambiguous before reparenting (don't guess which tickets they meant).
 - Don't repeat the full session state back to the PM; assume they remember the recent conversation.
 
@@ -134,6 +134,7 @@ function summarizeSession(session: Session, config: ConduitConfig) {
     destination_override: session.destination,
     tone_override: session.tone,
     attached_context_count: session.attached_urls.length,
+    figma_frames_loaded: session.figma_frames?.length ?? 0,
     scan_findings_count: session.scan_findings_count,
     draft_tickets: session.draft_tickets?.length ?? 0,
     pushed: !!session.pushed_ticket_ids?.length,

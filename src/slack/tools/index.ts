@@ -7,7 +7,8 @@ import { routeFor } from "../../core/router.js";
 import { getProvider } from "../../integrations/registry.js";
 import { loadState, saveState, addMapping, hashContent } from "../../core/state.js";
 import { fetchSpecFromUrl } from "../../core/spec-fetcher.js";
-import type { Session } from "../session.js";
+import { getFigmaTree, parseFigmaUrl, buildFrameCatalog } from "../../integrations/figma.js";
+import type { Session, FigmaFrameRef } from "../session.js";
 
 export interface ToolDefinition {
   name: string;
@@ -180,8 +181,35 @@ function setTone(input: { directive: string }, session: Session): string {
   return `Tone override set: "${input.directive}". Applies to the next generate_tickets call.`;
 }
 
-function attachContext(input: { url_or_note: string }, session: Session): string {
+async function attachContext(input: { url_or_note: string }, session: Session): Promise<string> {
   session.attached_urls.push(input.url_or_note);
+
+  // If this is a Figma URL, fetch the file tree and stash the frame catalog so
+  // generate_tickets can reference real frames in AC instead of just dropping
+  // the URL into the description.
+  const figma = parseFigmaUrl(input.url_or_note);
+  if (figma) {
+    if (!process.env.FIGMA_ACCESS_TOKEN) {
+      return `Attached URL. Note: FIGMA_ACCESS_TOKEN is not set, so I couldn't fetch frames from this file — ACs won't be able to reference specific frame names. Set the env var to enable that.`;
+    }
+    try {
+      const tree = await getFigmaTree(figma.fileId);
+      const catalog = buildFrameCatalog(figma.fileId, tree.name, tree.nodes, figma.nodeId);
+      const frames: FigmaFrameRef[] = catalog.map((c) => ({
+        file_id: c.file_id,
+        node_id: c.node_id,
+        name: c.name,
+        type: c.type,
+        path: c.path,
+      }));
+      session.figma_frames = [...(session.figma_frames ?? []), ...frames];
+      const scope = figma.nodeId ? ` (scoped to node ${figma.nodeId} and its descendants)` : "";
+      return `Attached Figma file "${tree.name}"${scope}. Loaded ${frames.length} frame(s) — ACs can now reference them by name.`;
+    } catch (err) {
+      return `Attached URL, but couldn't fetch the Figma file tree: ${err instanceof Error ? err.message : String(err)}. ACs will still reference the URL but not specific frames.`;
+    }
+  }
+
   return `Attached. Session now has ${session.attached_urls.length} context item(s).`;
 }
 
@@ -191,6 +219,12 @@ async function generateTicketsTool(session: Session, config: ConduitConfig): Pro
   let context = `Spec file: ${spec.file}\n\n${spec.raw}`;
   if (session.attached_urls.length > 0) {
     context += `\n\nAdditional context attached by the PM:\n` + session.attached_urls.map((u) => `- ${u}`).join("\n");
+  }
+  if (session.figma_frames && session.figma_frames.length > 0) {
+    context +=
+      `\n\nAVAILABLE FIGMA FRAMES — the PM has attached one or more Figma files; the visible frames are:\n` +
+      session.figma_frames.map((f) => `- "${f.path}" (${f.type}, node ${f.node_id})`).join("\n") +
+      `\n\nWhen an acceptance criterion describes behavior visible in one of these frames, reference the frame name in the AC (e.g. 'Given the host is on the "Future phases > Unavailable" frame...'). ONLY reference frames from the list above — do not invent frame names. If no frame in the list matches what an AC describes, don't reference a frame.`;
   }
   if (session.tone) {
     context = `TONE OVERRIDE: ${session.tone}\n\n${context}`;

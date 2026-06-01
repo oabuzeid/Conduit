@@ -91,6 +91,70 @@ export function figmaTreeToPromptContext(
 }
 
 /**
+ * Parse a Figma file URL into { fileId, nodeId? }. Supports both /file/ and
+ * /design/ paths; nodeId comes from the ?node-id= query param if present.
+ */
+export function parseFigmaUrl(url: string): { fileId: string; nodeId?: string } | null {
+  const match = url.match(/figma\.com\/(?:file|design)\/([a-zA-Z0-9_-]+)/);
+  if (!match) return null;
+  const fileId = match[1];
+  const nodeMatch = url.match(/[?&]node-id=([^&]+)/);
+  const nodeId = nodeMatch ? decodeURIComponent(nodeMatch[1]).replace(/-/, ":") : undefined;
+  return { fileId, nodeId };
+}
+
+/**
+ * Walk a Figma tree and produce a compact frame catalog: every FRAME, SECTION,
+ * or COMPONENT node with its hierarchy path. If restrictToNodeId is set, only
+ * nodes within that subtree (plus the node itself) are included.
+ */
+export interface FrameCatalogEntry {
+  file_id: string;
+  node_id: string;
+  name: string;
+  type: string;
+  path: string;
+}
+export function buildFrameCatalog(
+  fileId: string,
+  fileName: string,
+  nodes: FigmaNode[],
+  restrictToNodeId?: string
+): FrameCatalogEntry[] {
+  // We only want frames a PM would name in an AC — top-level screens and
+  // sections, not the dozens of inner layout frames Figma generates for
+  // every padding/auto-layout container. Heuristic: emit a node only if its
+  // direct parent is a CANVAS, SECTION, or COMPONENT. That captures
+  // page-level screens and section-grouped screens, and drops nested
+  // layout-only frames.
+  const out: FrameCatalogEntry[] = [];
+  const isParentEligible = (t: string | undefined): boolean =>
+    !t || t === "CANVAS" || t === "SECTION" || t === "COMPONENT";
+  const isFrameLike = (t: string): boolean =>
+    t === "FRAME" || t === "SECTION" || t === "COMPONENT";
+  let collecting = !restrictToNodeId;
+
+  const walk = (node: FigmaNode, parentPath: string[], parentType: string | undefined): void => {
+    const path = node.name ? [...parentPath, node.name] : parentPath;
+    if (node.id === restrictToNodeId) collecting = true;
+
+    if (collecting && isFrameLike(node.type) && isParentEligible(parentType)) {
+      out.push({
+        file_id: fileId,
+        node_id: node.id,
+        name: node.name,
+        type: node.type,
+        path: path.join(" > "),
+      });
+    }
+    for (const child of node.children ?? []) walk(child, path, node.type);
+  };
+
+  for (const root of nodes) walk(root, fileName ? [fileName] : [], undefined);
+  return out;
+}
+
+/**
  * Find Figma frames whose names match a search term (case-insensitive).
  * Useful for mapping spec sections to Figma frames.
  */

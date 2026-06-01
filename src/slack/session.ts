@@ -9,6 +9,14 @@ export interface ChatTurn {
   tool_name?: string;
 }
 
+export interface FigmaFrameRef {
+  file_id: string;
+  node_id: string;
+  name: string;
+  type: string;   // FRAME, SECTION, or COMPONENT
+  path: string;   // e.g. "Page 1 > Future phases > Unavailable"
+}
+
 export interface Session {
   thread_ts: string;
   channel: string;
@@ -23,6 +31,7 @@ export interface Session {
   destination?: string;          // Project key override
   tone?: string;                  // Tone directive override
   attached_urls: string[];
+  figma_frames?: FigmaFrameRef[];
   scan_findings_count?: number;
   draft_tickets?: GeneratedTicket[];
   pushed_ticket_ids?: string[];
