@@ -222,14 +222,40 @@ async function generateTicketsTool(session: Session, config: ConduitConfig): Pro
   }
   if (session.figma_frames && session.figma_frames.length > 0) {
     context +=
-      `\n\nAVAILABLE FIGMA FRAMES — the PM has attached one or more Figma files; the visible frames are:\n` +
+      `\n\nAVAILABLE FIGMA FRAMES — the PM has attached one or more Figma files. These are the ONLY frames that exist:\n` +
       session.figma_frames.map((f) => `- "${f.path}" (${f.type}, node ${f.node_id})`).join("\n") +
-      `\n\nWhen an acceptance criterion describes behavior visible in one of these frames, reference the frame name in the AC (e.g. 'Given the host is on the "Future phases > Unavailable" frame...'). ONLY reference frames from the list above — do not invent frame names. If no frame in the list matches what an AC describes, don't reference a frame.`;
+      `\n\nFIGMA-FRAME RULES (strict):\n` +
+      `1. If you reference a Figma frame in a ticket title, description, or AC, the frame name must match a name from the list above CHARACTER-FOR-CHARACTER. Don't paraphrase, translate, pluralize, shorten, or "tidy up" the name. Copy it verbatim.\n` +
+      `2. Don't invent frames that aren't in the list. If you find yourself wanting to reference "the Loading state" or "the Confirmation screen" and no such name appears in the list, the frame doesn't exist — describe the behavior without a frame reference, or note "(no design yet)".\n` +
+      `3. Don't reference a frame just because it sounds related. Only reference a frame when an AC describes behavior actually visible on that specific frame.\n` +
+      `4. When you do reference a frame, use the full path (e.g. 'the "Future phases > Unavailable" frame'), not just the last segment. This disambiguates frames that share a name.\n` +
+      `5. Before finalizing each AC that mentions a frame, mentally check: does the exact string I'm about to emit appear in the list above? If no — remove the frame reference.`;
   }
   if (session.tone) {
     context = `TONE OVERRIDE: ${session.tone}\n\n${context}`;
   }
   const tickets = await generateTickets(context, config);
+
+  // Backstop: scan generated tickets for frame-name references the model
+  // invented (i.e. not in the catalog). Strip the invented refs and log a
+  // warning so prompt hallucination is observable even if the prompt rule
+  // is ignored. Only runs when the session actually loaded frames.
+  if (session.figma_frames && session.figma_frames.length > 0) {
+    const validNames = new Set(session.figma_frames.map((f) => f.name));
+    const validPaths = new Set(session.figma_frames.map((f) => f.path));
+    const violations: string[] = [];
+    for (const t of tickets) {
+      const cleaned = stripInventedFrameRefs(t.description, validNames, validPaths, violations, `${t.title} (description)`);
+      t.description = cleaned;
+      t.acceptance_criteria = t.acceptance_criteria.map((ac) =>
+        stripInventedFrameRefs(ac, validNames, validPaths, violations, `${t.title} (ac)`)
+      );
+    }
+    if (violations.length > 0) {
+      console.warn(`[slack/tools] Stripped ${violations.length} invented Figma frame ref(s) from generated tickets:\n  ${violations.join("\n  ")}`);
+    }
+  }
+
   session.draft_tickets = tickets;
   const epics = tickets.filter((t) => t.type === "epic");
   const stories = tickets.filter((t) => t.type === "story");
@@ -349,6 +375,24 @@ async function pushTickets(session: Session, config: ConduitConfig): Promise<str
   // tickets under a new epic in the same conversation. Use a separate close
   // action (future) to mark a session as done.
   return `Pushed ${tickets.length} tickets to ${provider.name}:\n` + links.join("\n");
+}
+
+function stripInventedFrameRefs(
+  text: string,
+  validNames: Set<string>,
+  validPaths: Set<string>,
+  violations: string[],
+  context: string
+): string {
+  // Match the two patterns the prompt teaches the model to produce:
+  //   the "X" frame
+  //   the 'X' frame
+  // For each match, the captured X must equal a known frame name or path.
+  return text.replace(/the\s+["“']([^"”']+)["”']\s+frame/gi, (match, ref) => {
+    if (validNames.has(ref) || validPaths.has(ref)) return match;
+    violations.push(`${context}: invented frame "${ref}"`);
+    return "the appropriate screen";
+  });
 }
 
 async function createJiraTicket(
