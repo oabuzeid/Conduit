@@ -1,4 +1,5 @@
 import { readFileSync, existsSync } from "fs";
+import { Octokit } from "@octokit/rest";
 import type { ConduitConfig } from "../../core/config.js";
 import { loadSpecs, parseSpec } from "../../core/spec-parser.js";
 import { scanSpecForAmbiguity } from "../../core/ambiguity-scanner.js";
@@ -100,6 +101,17 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     },
   },
   {
+    name: "save_spec_to_repo",
+    description: "Commit the session's spec to the conduit repo so reverse-direction sync (v0.2) has a real spec file to edit when tickets change in Jira later. Call this when the spec came from a Slack paste or file upload — without it, ticket edits in Jira can't be propagated back to a spec because no real spec file exists. After this runs, any tickets already pushed in this session get their state.json mappings updated to point at the new path. Idempotent: re-running with the same path overwrites.",
+    input_schema: {
+      type: "object",
+      properties: {
+        path: { type: "string", description: "Repo-relative target path, e.g. 'specs/avatar-upload.md'. If omitted, auto-derived from the spec's H1 title." },
+        commit_message: { type: "string", description: "Optional commit message. Defaults to 'docs: add spec via Slack session'." },
+      },
+    },
+  },
+  {
     name: "change_jira_parent",
     description: "Reparent an existing Jira ticket. Use this when the PM wants to move stories under a different epic — e.g. 'move SCRUM-45 and SCRUM-46 under the new epic SCRUM-50.' Pass an empty string as new_parent_key to detach from any epic.",
     input_schema: {
@@ -130,6 +142,7 @@ export async function executeTool(
     case "push_tickets": return pushTickets(session, config);
     case "create_jira_ticket": return createJiraTicket(input as { title: string; description: string; type: "epic" | "story"; project_key?: string; parent_key?: string }, session, config);
     case "change_jira_parent": return changeJiraParent(input as { ticket_keys: string[]; new_parent_key: string }, config);
+    case "save_spec_to_repo": return saveSpecToRepo(input as { path?: string; commit_message?: string }, session, config);
     default: return `Unknown tool: ${name}`;
   }
 }
@@ -375,6 +388,76 @@ async function pushTickets(session: Session, config: ConduitConfig): Promise<str
   // tickets under a new epic in the same conversation. Use a separate close
   // action (future) to mark a session as done.
   return `Pushed ${tickets.length} tickets to ${provider.name}:\n` + links.join("\n");
+}
+
+async function saveSpecToRepo(
+  input: { path?: string; commit_message?: string },
+  session: Session,
+  config: ConduitConfig
+): Promise<string> {
+  if (!session.spec_text) return "No spec loaded — call ingest_spec first.";
+
+  const token = process.env.GITHUB_TOKEN;
+  const repoEnv = process.env.CONDUIT_GITHUB_REPO;
+  if (!token) return "GITHUB_TOKEN is not set — can't commit to the repo. Set it in .env and retry.";
+  if (!repoEnv || !repoEnv.includes("/")) return "CONDUIT_GITHUB_REPO is not set (expected 'owner/name'). Set it in .env and retry.";
+  const [owner, repo] = repoEnv.split("/");
+
+  // Derive a path from the spec H1 if none provided.
+  const targetPath = input.path ?? deriveSpecPath(session.spec_text);
+  if (!targetPath.startsWith("specs/")) {
+    return `Path must start with 'specs/'. Got: ${targetPath}`;
+  }
+
+  const octokit = new Octokit({ auth: token });
+
+  // Check if the file already exists so we can decide create vs update.
+  let existingSha: string | undefined;
+  try {
+    const existing = await octokit.repos.getContent({ owner, repo, path: targetPath });
+    if (!Array.isArray(existing.data) && "sha" in existing.data) existingSha = existing.data.sha;
+  } catch (err) {
+    // 404 = create new. Other errors propagate.
+    if ((err as { status?: number }).status !== 404) {
+      return `Could not check existing file at ${targetPath}: ${err instanceof Error ? err.message : String(err)}`;
+    }
+  }
+
+  const commitMessage = input.commit_message ?? "docs: add spec via Slack session";
+  await octokit.repos.createOrUpdateFileContents({
+    owner,
+    repo,
+    path: targetPath,
+    message: commitMessage,
+    content: Buffer.from(session.spec_text, "utf-8").toString("base64"),
+    sha: existingSha,
+  });
+
+  // Update the session and any already-pushed tickets' state.json entries so
+  // reverse-sync (v0.2) finds the spec file when webhooks fire on those tickets.
+  session.spec_file_path = targetPath;
+  const state = loadState(config.sync.state_file);
+  let migrated = 0;
+  for (const m of state.mappings) {
+    if (m.spec_file === "(slack session)" || m.spec_file.startsWith("session://")) {
+      m.spec_file = targetPath.replace(/^specs\//, "");
+      migrated++;
+    }
+  }
+  saveState(config.sync.state_file, state);
+
+  const created = existingSha ? "Updated" : "Created";
+  return `${created} ${owner}/${repo}:${targetPath}. ${migrated > 0 ? `Migrated ${migrated} state.json mapping(s) to point at the new path — reverse-sync is now armed for those tickets.` : "No prior mappings needed updating."}`;
+}
+
+function deriveSpecPath(specText: string): string {
+  const h1 = specText.match(/^#\s+(.+)$/m);
+  const title = h1 ? h1[1].trim() : "untitled-spec";
+  const slug = title.toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60);
+  return `specs/${slug || "untitled-spec"}.md`;
 }
 
 function stripInventedFrameRefs(
