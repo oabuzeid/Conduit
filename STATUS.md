@@ -1,13 +1,14 @@
 # Project Status
 
-**Current version:** v0.1.0 — Foundation phase
+**Current version:** v0.3.0 — Slack workflow (Phase C complete; Phase D remaining)
 
 ## What this codebase contains
 
-This repository contains v0.1 only. v0.1 is a working CLI for one-way spec-to-ticket generation, drift detection, and Figma audit. It is engine work for developers, not a product PMs would use directly. The product launches in v0.3 (Slack workflow).
+The engine (v0.1–v0.2.x) is complete and the product layer (v0.3) is mid-build. v0.1–v0.2.x is developer-facing engine work: one-way spec-to-ticket generation, drift detection, Figma audit, the agentic webhook engine, and the capture layer. v0.3 is the first PM-facing surface — a conversational Slack app — and is where the product launches. Phases A and B of v0.3 have shipped; Phases C and D remain.
 
-## What v0.1 includes
+## Engine (v0.1 – v0.2.x) — ✅ complete
 
+**v0.1 — Foundation ✅**
 - ✅ Spec parser (markdown → structured sections)
 - ✅ AI ticket generation
 - ✅ Linear integration
@@ -19,69 +20,54 @@ This repository contains v0.1 only. v0.1 is a working CLI for one-way spec-to-ti
 - ✅ GitHub Action for PR sync checks
 - ✅ Pluggable provider interface for forkers
 
-## What v0.1 does not include
-
-These are not built yet:
-
 **v0.1.x — Engine UX improvements ✅**
 - ✅ Configurable ticket breakdown (`by_section` | `by_layer` | `by_component` | `custom`; stories are the atomic unit — no subtasks emitted)
 - ✅ Project-level acceptance criteria format (`ac_format`: format type, include_background, include_figma_links — no artificial cap on AC count)
-- ✅ Default opinionated tone hard-coded in AI engine prompts (also encodes the three ticket-writing rules from CLAUDE.md: no context-only tickets, ignore open questions in AC, decision-style tickets for open-question sections)
+- ✅ Default opinionated tone hard-coded in AI engine prompts (also encodes the three ticket-writing rules from CLAUDE.md)
 - ✅ Per-project significant-change threshold for Figma (consumed by v0.2's design-side classifier)
 
-**v0.2 — Agentic engine + capture layer:** ✅
-- ✅ Reverse-direction analysis (ticket changes → spec diff) — covers full ticket lifecycle: edited, created, deleted
+**v0.2 — Agentic engine + capture layer ✅**
+- ✅ Reverse-direction analysis (ticket changes → spec diff) — covers edited, created, deleted
 - ✅ Spec PR generator
-- ✅ Investigation agent (LLM directs control flow on webhook receipt) — shares I/O contract with the design-side classifier
+- ✅ Investigation agent (LLM directs control flow on webhook receipt)
 - ✅ Webhook listener service (`conduit serve --port 3000`; Jira / GitHub / Figma handlers; HMAC verification optional)
 - ✅ Merge-propagation
 - ✅ Loop prevention (tag-based; hash-based attribution deferred)
 - ✅ Artifact capture layer (JSON file logging; SQLite migration deferred to v0.4)
-- ✅ Design-side change classifier (structural pre-filter + Claude semantic classification of Figma webhook events) — shares I/O contract with the investigation agent
+- ✅ Design-side change classifier (structural pre-filter + Claude semantic classification of Figma webhook events)
 
-**v0.2.x — Engine follow-ups:** ✅
+**v0.2.x — Engine follow-ups ✅**
 - ✅ Per-project ticket routing (`routes` block in conduit.yaml; stories inherit parent epic's project)
 - ✅ PRD ambiguity scanner (`conduit scan`)
 - ✅ Acceptance criteria regression detector (runs during `conduit sync`)
-- ✅ Frame/ticket → spec section auto-mapping (closes the orphan-mapping gap surfaced during v0.2 testing)
+- ✅ Frame/ticket → spec section auto-mapping
 - ✅ Async webhook processing (handlers respond 202 in ~20ms; chain runs in background)
 
-**v0.3 — Slack workflow (the product launches here):**
-- ❌ Conduit Slack app
-- ❌ Conversational project setup
-- ❌ Breakdown preview and edit
-- ❌ Destination selection
-- ❌ Context attachment (Figma links, PDFs, external docs)
-- ❌ Confirmation and follow-up
-- ❌ Spec PR approval flow in Slack
-- ❌ Tone override from Slack
-- ❌ Learning placeholder UI
-- ❌ Design-change Slack alerts (accept/dismiss/modify proposed changes from Figma)
+## v0.3 — Slack workflow (in progress)
 
-**v0.4 — Learning loop on captured data:**
-- ❌ Structured diff layer
-- ❌ Pattern aggregator
-- ❌ Eval harness
-- ❌ Self-improvement loop
-- ❌ Meeting transcript ingestion
-- ❌ Decision log auto-generation
-- ❌ Stakeholder summary generator
-- ❌ Stale work detector with action proposals
-- ❌ Roadmap reality checker
+The product launches here. v0.3 was phased A→D in code. A, B, and C have shipped.
 
-**v0.5 — Additional user surfaces:**
-- ❌ Tauri menu bar app
-- ❌ Browser extension
-- ❌ Notion as a spec source
+**Phase A — Slack app scaffold ✅**
+- ✅ Bolt app + ExpressReceiver host, mounted on the `conduit serve` server
+- ✅ `/conduit` slash command (`ping`, `help`)
 
-The agentic, learning sync engine described in the README is v0.2 through v0.4. v0.1 is the working baseline they will be built on.
+**Phase B — agentic thread conversation ✅**
+- ✅ `@conduit` mention starts a conversational session in-thread (tool-using agent, not a wizard)
+- ✅ Tools: `ingest_spec` (paste / repo file path / public Google Doc URL), `scan_spec`, `set_destination`, `set_tone`, `attach_context` (Figma links), `generate_tickets`, `update_breakdown`, `push_tickets`
+- ✅ Figma frame catalog wired into ticket generation with a strict no-invented-frame-refs guard
+- ✅ Post-push ticket edits: `create_jira_ticket`, `change_jira_parent`
+- ✅ `save_spec_to_repo` — commits Slack-originated specs to the repo so v0.2 reverse-sync works end-to-end; migrates session state mappings to the real path
+- ✅ "Conduit is learning your team's patterns" placeholder text (help menu context block — the v0.4 UI shell)
 
-## Why v0.1 ships standalone
+**Phase C — interactive breakdown UI ✅**
+- ✅ `present_breakdown` tool renders the draft as a Block Kit card with Approve & push / Modify buttons
+- ✅ Approve button pushes tickets to the provider and resolves the card in-place
+- ✅ Modify button invites free-text edits in-thread — the PM types changes and @conduit applies them
 
-v0.1 is independently useful: it generates tickets from specs, posts Figma comments, and detects drift. Developers can use it today as a one-way generator with manual sync checks.
+**Phase D — Slack-native approval alerts ❌**
+- ❌ Spec-PR approval flow in Slack (v0.2's agent proposes; PM approves/rejects in-thread instead of GitHub UI)
+- ❌ Design-change Slack alerts — v0.2's Figma classifier posts a change summary to the project thread with accept-and-propagate / dismiss / modify actions (closes the design→spec→ticket loop in front of a PM)
 
-Shipping v0.1 alone validates the AI quality, integration layer, and state model before adding the agentic and learning logic on top.
+## v0.4+ — not started
 
-## v0.2 status
-
-Not started. See [ROADMAP.md](ROADMAP.md) for the full build order.
+See [ROADMAP.md](ROADMAP.md) for v0.4 (learning loop) and v0.5 (additional surfaces).

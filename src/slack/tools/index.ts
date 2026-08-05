@@ -81,8 +81,13 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     },
   },
   {
+    name: "present_breakdown",
+    description: "Show the current draft breakdown to the PM as an interactive card with 'Approve & push' and 'Modify' buttons. Call this instead of asking 'shall I push?' in plain text, once the draft is generated and you've applied any edits the PM asked for. The PM can click Approve to push (you don't need to call push_tickets yourself — the button handles it) or click Modify / type edits. Your text reply this turn becomes the message above the buttons, so keep it short (e.g. 'Here's the breakdown — approve to push, or tell me what to change.'). No arguments — reads the session's current draft.",
+    input_schema: { type: "object", properties: {} },
+  },
+  {
     name: "push_tickets",
-    description: "Actually create the draft tickets in Jira/Linear. Only call after the user has explicitly approved the breakdown. Returns the created ticket IDs and URLs.",
+    description: "Actually create the draft tickets in Jira/Linear. Only call after the user has explicitly approved the breakdown IN TEXT (e.g. they typed 'ship it'). If you presented buttons with present_breakdown, prefer letting the Approve button push instead of calling this. Returns the created ticket IDs and URLs.",
     input_schema: { type: "object", properties: {} },
   },
   {
@@ -139,6 +144,7 @@ export async function executeTool(
     case "attach_context": return attachContext(input as { url_or_note: string }, session);
     case "generate_tickets": return generateTicketsTool(session, config);
     case "update_breakdown": return updateBreakdown(input as { edits: string }, session);
+    case "present_breakdown": return presentBreakdown(session, config);
     case "push_tickets": return pushTickets(session, config);
     case "create_jira_ticket": return createJiraTicket(input as { title: string; description: string; type: "epic" | "story"; project_key?: string; parent_key?: string }, session, config);
     case "change_jira_parent": return changeJiraParent(input as { ticket_keys: string[]; new_parent_key: string }, config);
@@ -318,7 +324,23 @@ function updateBreakdown(input: { edits: string }, session: Session): string {
   return `Applied edits: removed ${removed}, edited ${edited}, added ${added}. Draft now has ${session.draft_tickets.length} tickets.`;
 }
 
-async function pushTickets(session: Session, config: ConduitConfig): Promise<string> {
+/** Resolve the destination label for display in breakdown blocks. */
+export function resolveDestination(session: Session, config: ConduitConfig): string {
+  return session.destination ?? config.tickets.project;
+}
+
+function presentBreakdown(session: Session, config: ConduitConfig): string {
+  if (!session.draft_tickets || session.draft_tickets.length === 0) {
+    return "No draft tickets to present — call generate_tickets first.";
+  }
+  const destination = session.destination ?? config.tickets.project;
+  session.awaiting_approval = true;
+  const epics = session.draft_tickets.filter((t) => t.type === "epic").length;
+  const stories = session.draft_tickets.filter((t) => t.type === "story").length;
+  return `Breakdown card rendered (${epics} epics, ${stories} stories → ${destination}). The PM will see Approve & Modify buttons — wait for their click or typed response.`;
+}
+
+export async function pushTickets(session: Session, config: ConduitConfig): Promise<string> {
   if (!session.draft_tickets || session.draft_tickets.length === 0) return "No draft tickets to push.";
   const provider = getProvider(config.tickets.provider);
   const tickets = session.draft_tickets;

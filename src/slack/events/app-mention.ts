@@ -3,7 +3,8 @@ import { writeFileSync, existsSync, mkdirSync } from "fs";
 import { loadConfig } from "../../core/config.js";
 import { getSession, startSession, saveSession } from "../session.js";
 import { decideNextTurn } from "../conversation-agent.js";
-import { executeTool } from "../tools/index.js";
+import { executeTool, resolveDestination } from "../tools/index.js";
+import { renderBreakdownBlocks } from "../blocks.js";
 
 interface SlackFile {
   id?: string;
@@ -91,11 +92,24 @@ export function registerAppMention(app: App): void {
       reply = `Hit an error: ${err instanceof Error ? err.message : String(err)}`;
     }
 
-    await client.chat.update({
-      channel,
-      ts: placeholderTs,
-      text: reply || "(no reply generated — try rephrasing.)",
-    });
+    if (session.awaiting_approval) {
+      const destination = resolveDestination(session, config);
+      const blocks = renderBreakdownBlocks(session, reply, destination);
+      session.awaiting_approval = false;
+      saveSession(session);
+      await client.chat.update({
+        channel,
+        ts: placeholderTs,
+        text: reply || "Here's the breakdown — approve to push, or tell me what to change.",
+        blocks,
+      });
+    } else {
+      await client.chat.update({
+        channel,
+        ts: placeholderTs,
+        text: reply || "(no reply generated — try rephrasing.)",
+      });
+    }
   });
 }
 

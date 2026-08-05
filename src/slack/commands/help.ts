@@ -6,19 +6,19 @@ export async function handleHelp(_command: SlashCommand, respond: RespondFn): Pr
     blocks: [
       {
         type: "header",
-        text: { type: "plain_text", text: "Conduit · v0.3.0 (Phase A)" },
+        text: { type: "plain_text", text: "Conduit · v0.3.0 (Phase C)" },
       },
       {
         type: "section",
         text: {
           type: "mrkdwn",
           text:
-            "*What I can do right now (Phase A):*\n" +
-            "• `/conduit ping` — confirm I'm alive\n" +
-            "• `/conduit help` — show this menu\n\n" +
+            "*What I can do right now:*\n" +
+            "• `@conduit` mention me in a thread with your spec — pasted, a repo file path, or a public Google Doc link — and we'll figure out the breakdown together. Natural conversation, not a form to fill out.\n" +
+            "• I'll scan for ambiguity, take Figma links as context, let you pick the destination project and adjust tone, then show you the breakdown with *Approve & push* / *Modify* buttons.\n" +
+            "• Approve pushes tickets to Jira or Linear in one click. Modify invites free-text edits — type what to change and I'll re-render.\n" +
+            "• `/conduit ping` — confirm I'm alive · `/conduit help` — show this menu\n\n" +
             "*Coming next:*\n" +
-            "• `@conduit` mention me in a thread with your spec, and we'll figure out the breakdown together (Phase B) — natural conversation, not a form to fill out\n" +
-            "• Inline ticket previews with Approve / Modify buttons, alongside free-text edits like \"make these more concise\" (Phase C)\n" +
             "• Spec-PR and design-change alerts you Approve / Reject in Slack instead of GitHub (Phase D)",
         },
       },

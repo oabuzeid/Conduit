@@ -1,6 +1,10 @@
 import { App, ExpressReceiver, type Installation, type InstallationQuery } from "@slack/bolt";
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import { dirname } from "path";
+import { loadConfig } from "../core/config.js";
+import { getSession, saveSession } from "./session.js";
+import { pushTickets, resolveDestination } from "./tools/index.js";
+import { renderResolvedBreakdownBlocks } from "./blocks.js";
 import { registerSlashCommand } from "./commands/index.js";
 import { registerAppMention } from "./events/app-mention.js";
 
@@ -69,6 +73,68 @@ export function buildSlackApp(): { receiver: ExpressReceiver; app: App } | null 
 
   registerSlashCommand(app);
   registerAppMention(app);
+  registerBreakdownActions(app);
 
   return { receiver, app };
+}
+
+function registerBreakdownActions(app: App): void {
+  // Approve & push: push tickets immediately, then re-render the card as resolved.
+  app.action("breakdown_approve", async ({ ack, body, client }) => {
+    await ack();
+    const threadTs = (body as { actions?: Array<{ value?: string }> }).actions?.[0]?.value;
+    if (!threadTs) return;
+    const session = getSession(threadTs);
+    if (!session) return;
+
+    const config = loadConfig();
+    const destination = resolveDestination(session, config);
+    const channel = session.channel;
+
+    let statusLine: string;
+    try {
+      const result = await pushTickets(session, config);
+      // Persist the pushed state so the PM can still do follow-ups.
+      saveSession(session);
+      statusLine = `✅ Pushed by <@${body.user.id}>. ${result}`;
+    } catch (err) {
+      statusLine = `❌ Push failed: ${err instanceof Error ? err.message : String(err)}`;
+    }
+
+    // Re-render the original message with resolved blocks (buttons removed).
+    const messageTs = (body as { message?: { ts?: string } }).message?.ts;
+    const originalText = (body as { message?: { text?: string } }).message?.text ?? "";
+    if (messageTs) {
+      const blocks = renderResolvedBreakdownBlocks(session, originalText, destination, statusLine);
+      await client.chat.update({ channel, ts: messageTs, text: statusLine, blocks });
+    }
+  });
+
+  // Modify: invite the PM to type edits, then re-render as resolved.
+  app.action("breakdown_modify", async ({ ack, body, client }) => {
+    await ack();
+    const threadTs = (body as { actions?: Array<{ value?: string }> }).actions?.[0]?.value;
+    if (!threadTs) return;
+    const session = getSession(threadTs);
+    if (!session) return;
+
+    const config = loadConfig();
+    const destination = resolveDestination(session, config);
+    const channel = session.channel;
+    const statusLine = `✏️ Modify requested by <@${body.user.id}> — type your edits in this thread and @conduit to apply them.`;
+
+    const messageTs = (body as { message?: { ts?: string } }).message?.ts;
+    const originalText = (body as { message?: { text?: string } }).message?.text ?? "";
+    if (messageTs) {
+      const blocks = renderResolvedBreakdownBlocks(session, originalText, destination, statusLine);
+      await client.chat.update({ channel, ts: messageTs, text: statusLine, blocks });
+    }
+
+    // Post a follow-up so the thread stays active and the PM knows what to do.
+    await client.chat.postMessage({
+      channel,
+      thread_ts: threadTs,
+      text: "Tell me what to change — e.g. \"split the upload epic into backend and frontend\" or \"drop the analytics story.\" I'll update the breakdown and show it again.",
+    });
+  });
 }

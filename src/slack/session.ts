@@ -35,6 +35,10 @@ export interface Session {
   scan_findings_count?: number;
   draft_tickets?: GeneratedTicket[];
   pushed_ticket_ids?: string[];
+  // Set by the present_breakdown tool for one turn; the app-mention transport
+  // reads it to decide whether to attach Approve/Modify buttons to the reply,
+  // then clears it. Not part of the model-visible session summary.
+  awaiting_approval?: boolean;
 
   // Claude conversation history (excludes system prompt — that's regenerated each turn)
   history: ChatTurn[];
