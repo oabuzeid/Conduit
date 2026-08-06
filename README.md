@@ -2,7 +2,7 @@
 
 A spec-arbitrated sync engine for product teams.
 
-> This repository contains v0.1 only. v0.1 is the foundation phase: a CLI for one-way spec-to-ticket generation, plus drift detection. The bidirectional sync engine described below is the v0.2 plan and is not yet implemented. See [STATUS.md](STATUS.md) for what is built and what is planned, and [ROADMAP.md](ROADMAP.md) for the full plan.
+> v0.1 through v0.3 are complete. The engine (CLI, bidirectional sync, webhook listener, agentic routing) and the product layer (conversational Slack app with interactive approval flows) are live. v0.4 (learning loop) is next. See [STATUS.md](STATUS.md) for what is built and [ROADMAP.md](ROADMAP.md) for the full plan.
 
 ## The idea
 
@@ -19,7 +19,9 @@ This avoids three-way live sync conflicts while keeping teams bidirectionally aw
 - Not a chat workflow: A webhook listener that runs continuously and opens PRs without human prompting is not something a Claude conversation can do.
 - Pluggable: Adding a new ticket system, design tool, or doc source means implementing one interface and registering it.
 
-## What works today (v0.1)
+## What works today
+
+### CLI (v0.1+)
 
 | Command | What it does |
 |---------|-------------|
@@ -28,8 +30,16 @@ This avoids three-way live sync conflicts while keeping teams bidirectionally aw
 | `conduit generate --dry-run -v` | Preview without pushing |
 | `conduit sync` | Detect drift between specs and tickets |
 | `conduit audit` | Compare Figma designs against specs |
+| `conduit scan` | Run the PRD ambiguity scanner |
+| `conduit serve --port 3000` | Start the webhook listener + Slack app |
 
-These commands are the basis for v0.2. v0.2 adds the webhook listener service that runs continuously and proposes spec PRs automatically.
+### Webhook engine (v0.2)
+
+When running `conduit serve`, the server listens for changes from Jira, GitHub, and Figma. An LLM agent decides how to route each change: open a spec PR, batch with related changes, ask the PM, or pause for loop detection. Merge-propagation keeps tickets in sync after spec PRs merge.
+
+### Slack app (v0.3)
+
+The product surface. `@conduit` in a Slack thread starts a conversational session: paste a spec, scan for ambiguity, generate a ticket breakdown, review it with Approve/Modify buttons, push to Jira or Linear. When ticket or design changes trigger spec PRs, Conduit posts approval alerts to the thread so the PM stays in Slack.
 
 ## Quick start
 
@@ -110,19 +120,21 @@ GitHub Action. Runs sync on PRs that touch spec files and comments the result on
 To enable the Slack workflow, create a Slack app and install it in your workspace:
 
 1. Go to https://api.slack.com/apps → **Create New App** → **From scratch** → name it `Conduit`, pick your workspace.
-2. **OAuth & Permissions** → add these Bot Token Scopes (minimal set; more added in later phases):
+2. **OAuth & Permissions** → add these Bot Token Scopes:
    - `chat:write`
    - `commands`
    - `app_mentions:read`
+   - `files:read` (for spec file uploads)
    - `users:read`
 3. **Slash Commands** → **Create New Command**:
    - Command: `/conduit`
    - Request URL: `https://<your-ngrok-url>/slack/commands`
    - Short description: `Conduit project setup and sync`
    - Usage hint: `[ping | help | start]`
-4. **Interactivity & Shortcuts** → toggle on, Request URL: `https://<your-ngrok-url>/slack/events`
-5. **Install to Workspace** → approve → copy the **Bot User OAuth Token** into `SLACK_BOT_TOKEN` in `.env`.
-6. **Basic Information** → copy **Signing Secret** into `SLACK_SIGNING_SECRET` in `.env`.
+4. **Event Subscriptions** → toggle on, Request URL: `https://<your-ngrok-url>/slack/events` → subscribe to `app_mention` under Bot Events.
+5. **Interactivity & Shortcuts** → toggle on, Request URL: `https://<your-ngrok-url>/slack/events`
+6. **Install to Workspace** → approve → copy the **Bot User OAuth Token** into `SLACK_BOT_TOKEN` in `.env`.
+7. **Basic Information** → copy **Signing Secret** into `SLACK_SIGNING_SECRET` in `.env`.
 
 Restart `conduit serve` — it will auto-detect the env vars and mount the Slack routes alongside the webhook listeners.
 
