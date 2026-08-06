@@ -1,0 +1,52 @@
+# Conduit — Slack app configuration
+#
+# Import this file when creating your Slack app to skip manual setup.
+#
+# Steps:
+#   1. Replace YOUR_SERVER_URL below with your actual server URL
+#      (e.g. https://conduit.example.com or your ngrok URL)
+#   2. Go to https://api.slack.com/apps → Create New App → From an app manifest
+#   3. Pick your workspace, paste this YAML, click Create
+#   4. Install to Workspace → approve
+#   5. Copy the Bot User OAuth Token into SLACK_BOT_TOKEN in your .env
+#   6. Copy the Signing Secret (Basic Information page) into SLACK_SIGNING_SECRET in your .env
+#   7. Start the server: conduit serve --port 3000
+#
+# That's it. /conduit and @conduit will work in your workspace.
+
+display_information:
+  name: Conduit
+  description: Spec-to-ticket sync engine — paste a spec, get tickets.
+  background_color: "#1a1a2e"
+
+features:
+  bot_user:
+    display_name: Conduit
+    always_online: true
+  slash_commands:
+    - command: /conduit
+      url: https://YOUR_SERVER_URL/slack/commands
+      description: Conduit project setup and sync
+      usage_hint: "[ping | help | start]"
+      should_escape: false
+
+oauth_config:
+  scopes:
+    bot:
+      - app_mentions:read
+      - chat:write
+      - commands
+      - files:read
+      - users:read
+
+settings:
+  event_subscriptions:
+    request_url: https://YOUR_SERVER_URL/slack/events
+    bot_events:
+      - app_mention
+  interactivity:
+    is_enabled: true
+    request_url: https://YOUR_SERVER_URL/slack/events
+  org_deploy_enabled: false
+  socket_mode_enabled: false
+  token_rotation_enabled: false

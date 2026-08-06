@@ -115,28 +115,23 @@ GitHub Action. Runs sync on PRs that touch spec files and comments the result on
 | `SLACK_BOT_TOKEN` | Slack (v0.3) | Bot User OAuth Token, starts with `xoxb-` |
 | `SLACK_SIGNING_SECRET` | Slack (v0.3) | App signing secret, used to verify incoming Slack requests |
 
-## Slack setup (v0.3)
+## Slack setup
 
-To enable the Slack workflow, create a Slack app and install it in your workspace:
+To enable the Slack workflow, create a Slack app using the included config file:
 
-1. Go to https://api.slack.com/apps → **Create New App** → **From scratch** → name it `Conduit`, pick your workspace.
-2. **OAuth & Permissions** → add these Bot Token Scopes:
-   - `chat:write`
-   - `commands`
-   - `app_mentions:read`
-   - `files:read` (for spec file uploads)
-   - `users:read`
-3. **Slash Commands** → **Create New Command**:
-   - Command: `/conduit`
-   - Request URL: `https://<your-ngrok-url>/slack/commands`
-   - Short description: `Conduit project setup and sync`
-   - Usage hint: `[ping | help | start]`
-4. **Event Subscriptions** → toggle on, Request URL: `https://<your-ngrok-url>/slack/events` → subscribe to `app_mention` under Bot Events.
-5. **Interactivity & Shortcuts** → toggle on, Request URL: `https://<your-ngrok-url>/slack/events`
-6. **Install to Workspace** → approve → copy the **Bot User OAuth Token** into `SLACK_BOT_TOKEN` in `.env`.
-7. **Basic Information** → copy **Signing Secret** into `SLACK_SIGNING_SECRET` in `.env`.
+1. Open [`slack-app.yaml`](slack-app.yaml) and replace `YOUR_SERVER_URL` with your actual server URL (e.g. `https://conduit.example.com` or your ngrok URL).
+2. Go to https://api.slack.com/apps → **Create New App** → **From an app manifest** → pick your workspace → paste the YAML → **Create**.
+3. **Install to Workspace** → approve.
+4. Copy the **Bot User OAuth Token** (OAuth & Permissions page) into `SLACK_BOT_TOKEN` in `.env`.
+5. Copy the **Signing Secret** (Basic Information page) into `SLACK_SIGNING_SECRET` in `.env`.
 
-Restart `conduit serve` — it will auto-detect the env vars and mount the Slack routes alongside the webhook listeners.
+Start the server — Slack routes mount alongside the webhook listeners:
+
+```bash
+conduit serve --port 3000
+```
+
+`/conduit` and `@conduit` will work in your workspace immediately.
 
 ## Project plan
 
