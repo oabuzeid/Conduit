@@ -109,11 +109,11 @@ Components:
 
 3. **Acceptance criteria regression detector** — when a ticket is edited externally, compare new AC against the original. Flag any that were weakened or removed. Runs during `sync`.
 
-### v0.3 — Slack workflow (the product launches here) 🚧 in progress
+### v0.3 — Slack workflow (the product launches here) ✅
 
 Audience: real PMs/designers/engineers using the product for the first time.
 
-Progress: Phases A–C are complete. The Slack app, conversational setup flow, breakdown edits, destination/tone overrides, context attachment, confirmation/follow-up, and interactive Approve/Modify buttons on the breakdown card are all live. Remaining: spec-PR and design-change approval alerts in Slack (Phase D — components 7 and 10). See STATUS.md for the phase-level breakdown.
+All 10 components ship. The Slack app, conversational setup flow, breakdown edits with Approve/Modify buttons, destination/tone overrides, context attachment, confirmation/follow-up, spec-PR approval alerts, and design-change alerts are live. See STATUS.md for the phase-level breakdown.
 
 Goal: Make Conduit usable by PMs, designers, and engineers through a conversational Slack interface. This is the phase where Conduit stops being engine work and starts being a product.
 

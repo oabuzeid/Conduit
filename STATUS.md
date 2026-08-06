@@ -1,6 +1,6 @@
 # Project Status
 
-**Current version:** v0.3.0 — Slack workflow (Phase C complete; Phase D remaining)
+**Current version:** v0.3.0 — Slack workflow (all phases complete)
 
 ## What this codebase contains
 
@@ -45,7 +45,7 @@ The engine (v0.1–v0.2.x) is complete and the product layer (v0.3) is mid-build
 
 ## v0.3 — Slack workflow (in progress)
 
-The product launches here. v0.3 was phased A→D in code. A, B, and C have shipped.
+The product launches here. v0.3 was phased A→D in code. All phases have shipped.
 
 **Phase A — Slack app scaffold ✅**
 - ✅ Bolt app + ExpressReceiver host, mounted on the `conduit serve` server
@@ -64,9 +64,11 @@ The product launches here. v0.3 was phased A→D in code. A, B, and C have shipp
 - ✅ Approve button pushes tickets to the provider and resolves the card in-place
 - ✅ Modify button invites free-text edits in-thread — the PM types changes and @conduit applies them
 
-**Phase D — Slack-native approval alerts ❌**
-- ❌ Spec-PR approval flow in Slack (v0.2's agent proposes; PM approves/rejects in-thread instead of GitHub UI)
-- ❌ Design-change Slack alerts — v0.2's Figma classifier posts a change summary to the project thread with accept-and-propagate / dismiss / modify actions (closes the design→spec→ticket loop in front of a PM)
+**Phase D — Slack-native approval alerts ✅**
+- ✅ Spec-PR approval flow: when a Jira ticket change triggers a spec PR, Conduit posts it to the Slack thread with Approve & merge / Request changes buttons
+- ✅ Design-change alerts: when the Figma classifier flags a significant change, Conduit posts it with Accept & propagate / Dismiss / Modify buttons
+- ✅ Accept & propagate opens a spec PR, auto-merges it, and triggers downstream propagation
+- ✅ Alert data stored by ID so button handlers can act on the original event
 
 ## v0.4+ — not started
 

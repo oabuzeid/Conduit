@@ -6,6 +6,7 @@ import { openSpecPR } from "../core/spec-pr.js";
 import { isConduitWrite, matchesRecentSelfWrite, recentSelfWrites } from "../core/loop-guard.js";
 import { mapToSpecSection } from "../core/spec-mapper.js";
 import { loadSpecs } from "../core/spec-parser.js";
+import { notifySpecPR } from "../slack/notify.js";
 
 interface JiraChangelogItem {
   field: string;
@@ -139,6 +140,16 @@ export async function handleJiraWebhook(payload: JiraWebhookPayload, config: Con
     config
   );
   console.log(`[jira] ${issue.key}: opened spec PR ${result.pr_url}`);
+
+  // Post a Slack alert so the PM can approve/reject without going to GitHub.
+  const notified = await notifySpecPR(
+    result,
+    { ...decision, pr_payload: decision.pr_payload },
+    event,
+    repo,
+    config
+  );
+  if (notified) console.log(`[jira] ${issue.key}: Slack alert posted`);
 }
 
 function lookupSpecMapping(ticketKey: string): { file: string; section: string; content: string } | null {

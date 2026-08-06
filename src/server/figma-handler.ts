@@ -2,7 +2,7 @@ import { readFileSync, existsSync } from "fs";
 import type { ConduitConfig } from "../core/config.js";
 import { getFigmaTree } from "../integrations/figma.js";
 import { flattenTree, diffSnapshots, classifyChanges } from "../core/figma-classifier.js";
-import { decide } from "../core/agent.js";
+import { notifyDesignChange } from "../slack/notify.js";
 
 interface FigmaWebhookPayload {
   event_type?: string;
@@ -48,10 +48,14 @@ export async function handleFigmaWebhook(payload: FigmaWebhookPayload, config: C
 
   if (event.classification === "ignore") return;
 
-  const decision = await decide(event, {}, config);
-  console.log(`[figma] ${fileId}: agent decision → ${decision.action}`);
-  if (decision.reasoning) console.log(`        ${decision.reasoning}`);
-  if (decision.question) console.log(`        question: ${decision.question}`);
-  // Note: opening a spec PR from a Figma event needs explicit spec-file mapping
-  // (no state.json entry for design changes). Deferred to v0.2.x improvements.
+  // Post a Slack alert so the PM can decide: accept & propagate, dismiss, or modify.
+  // The agent decision (open_pr_now, ask_pm, etc.) is deferred to the button handler —
+  // design changes surface to the PM first, unlike ticket changes which the agent
+  // can route autonomously.
+  const notified = await notifyDesignChange(event, config);
+  if (notified) {
+    console.log(`[figma] ${fileId}: Slack design-change alert posted`);
+  } else {
+    console.log(`[figma] ${fileId}: no active Slack session — design change logged but not alerted`);
+  }
 }

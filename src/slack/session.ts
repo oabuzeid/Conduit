@@ -70,6 +70,28 @@ export function saveSession(session: Session): void {
   writeAll(list);
 }
 
+/** Find the most recently active session whose spec file matches the given path. */
+export function findSessionBySpecFile(specFilePath: string): Session | null {
+  const normalized = specFilePath.replace(/^specs\//, "");
+  const sessions = readAll().filter((s) => s.status === "active");
+  // Sort by updated_at descending so the most recent session wins.
+  sessions.sort((a, b) => b.updated_at.localeCompare(a.updated_at));
+  return sessions.find((s) => {
+    const sessionPath = (s.spec_file_path ?? "").replace(/^specs\//, "");
+    return sessionPath === normalized || sessionPath === specFilePath || s.spec_file_path === specFilePath;
+  }) ?? null;
+}
+
+/** Find the most recently active session that attached a Figma file with the given ID. */
+export function findSessionByFigmaFile(fileId: string): Session | null {
+  const sessions = readAll().filter((s) => s.status === "active");
+  sessions.sort((a, b) => b.updated_at.localeCompare(a.updated_at));
+  return sessions.find((s) =>
+    s.figma_frames?.some((f) => f.file_id === fileId) ||
+    s.attached_urls.some((u) => u.includes(fileId))
+  ) ?? null;
+}
+
 export function startSession(input: { thread_ts: string; channel: string; user_id: string }): Session {
   const session: Session = {
     thread_ts: input.thread_ts,
