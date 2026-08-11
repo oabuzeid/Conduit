@@ -85,10 +85,10 @@ ai:
   ac_format:
     format: "given_when_then"     # given_when_then | bullets | numbered
     include_background: false     # if true, AC may restate story context
-    include_figma_links: false    # forward-looking; takes effect once generate ingests Figma in v0.2
+    include_figma_links: false    # if true, AC reference Figma frame names when relevant
 ```
 
-## How v0.1 works
+## How it works
 
 Spec as source of truth. H1 sections map to Epics. How H2 sections become Stories depends on `ai.breakdown.mode` — by spec section, by execution layer, by component, or by a custom rule you supply. Stories are the atomic unit; engineers split work into tasks themselves. Checkbox items in the spec fold into the parent story's acceptance criteria where they imply testable behavior.
 
@@ -96,7 +96,7 @@ Pluggable providers. Linear and Jira are built in. To add a new provider, implem
 
 Figma integration. On `generate`, conduit posts comments on matching frames. On `audit`, it compares the tree against your spec.
 
-State tracking. `.conduit/state.json` maps spec sections to ticket IDs with content hashes. v0.2 uses this for loop prevention and reverse-direction analysis.
+State tracking. `.conduit/state.json` maps spec sections to ticket IDs with content hashes. The webhook engine uses this for loop prevention and reverse-direction analysis.
 
 GitHub Action. Runs sync on PRs that touch spec files and comments the result on the PR.
 

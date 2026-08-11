@@ -4,7 +4,7 @@
 
 ## What this codebase contains
 
-The engine (v0.1–v0.2.x) is complete and the product layer (v0.3) is mid-build. v0.1–v0.2.x is developer-facing engine work: one-way spec-to-ticket generation, drift detection, Figma audit, the agentic webhook engine, and the capture layer. v0.3 is the first PM-facing surface — a conversational Slack app — and is where the product launches. Phases A and B of v0.3 have shipped; Phases C and D remain.
+The engine (v0.1–v0.2.x) and the product layer (v0.3) are both complete. v0.1–v0.2.x is developer-facing engine work: one-way spec-to-ticket generation, drift detection, Figma audit, the agentic webhook engine, and the capture layer. v0.3 is the first PM-facing surface — a conversational Slack app — and is where the product launches. All four v0.3 phases have shipped. v0.4 (learning loop) is next.
 
 ## Engine (v0.1 – v0.2.x) — ✅ complete
 
@@ -43,7 +43,7 @@ The engine (v0.1–v0.2.x) is complete and the product layer (v0.3) is mid-build
 - ✅ Frame/ticket → spec section auto-mapping
 - ✅ Async webhook processing (handlers respond 202 in ~20ms; chain runs in background)
 
-## v0.3 — Slack workflow (in progress)
+## v0.3 — Slack workflow — ✅ complete
 
 The product launches here. v0.3 was phased A→D in code. All phases have shipped.
 
