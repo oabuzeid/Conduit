@@ -1,12 +1,12 @@
 # Handoff — resuming conduit
 
-_Updated 2026-08-05 after completing v0.3. Read this together with `STATUS.md` (granular tracker) and `ROADMAP.md` (version-level plan)._
+_Updated 2026-08-11 after completing v0.3. Read this together with `STATUS.md` (granular tracker) and `ROADMAP.md` (version-level plan)._
 
 ## TL;DR
 
-**v0.3 is complete.** All four phases (A–D) are committed and pushed. The engine (v0.1–v0.2.x) and the product layer (v0.3 Slack workflow) are live. The working tree is clean.
+**v0.3 is complete.** All four phases (A–D) are committed and pushed. The engine (v0.1–v0.2.x) and the product layer (v0.3 Slack workflow) are live.
 
-Last commit on `main`: `41a5c6a feat(v0.3): Phase D — Slack-native spec-PR and design-change approval alerts` (pushed to `origin/main`).
+v0.3 landed across four feature commits, ending with `41a5c6a` (Phase D — Slack-native spec-PR and design-change approval alerts). Everything since is documentation. Run `git log --oneline -5` for the current tip rather than trusting a SHA written here.
 
 ## Where the project stands
 
