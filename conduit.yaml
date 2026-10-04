@@ -20,7 +20,7 @@ design:
     track_top_level_only: true
 
 ai:
-  model: "claude-sonnet-4-6"
+  model: "claude-opus-5-5"
   breakdown:
     mode: "by_layer"
 

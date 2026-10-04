@@ -79,7 +79,7 @@ design:                   # optional
   file_id: "your-file-id"
 
 ai:
-  model: "claude-sonnet-4-20250514"
+  model: "claude-opus-5-5"
   breakdown:
     mode: "by_section"            # by_section | by_layer | by_component | custom
   ac_format:

@@ -31,7 +31,7 @@ tickets:
 #     track_top_level_only: true   # ignore changes inside nested components (icons, padding, etc)
 
 ai:
-  model: "claude-sonnet-4-20250514"
+  model: "claude-opus-5-5"
   breakdown:
     mode: "by_section"          # by_section | by_layer | by_component | custom
     # custom_instructions: ""   # required only when mode is "custom"; tells Claude how to group stories

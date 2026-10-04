@@ -128,7 +128,7 @@ function applyDefaults(partial: Partial<ConduitConfig>): ConduitConfig {
         }
       : undefined,
     ai: {
-      model: partial.ai?.model ?? "claude-sonnet-4-20250514",
+      model: partial.ai?.model ?? "claude-opus-5-5",
       ac_format: {
         ...DEFAULT_AC_FORMAT,
         ...(partial.ai?.ac_format ?? {}),
